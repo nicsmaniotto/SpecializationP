@@ -116,7 +116,7 @@ public:
 	ASpaceship* GetSpaceship() const { return Spaceship; }
 	
 	UFUNCTION(BlueprintCallable)
-	void SetSpaceship(ASpaceship* _Spaceship) { if(_Spaceship && !Spaceship) Spaceship = _Spaceship; }
+	void SetSpaceship();
 
 };
 

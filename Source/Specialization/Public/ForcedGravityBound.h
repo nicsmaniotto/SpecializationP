@@ -17,6 +17,9 @@ class SPECIALIZATION_API UForcedGravityBound : public UGravityBound
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Forced")
 	TArray<AActor*> Outers;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Forced")
+	float LinearVelocityAdjusted = 300;
 
 public:
 	void EnlistComponent(UPrimitiveComponent* OtherComp) override;

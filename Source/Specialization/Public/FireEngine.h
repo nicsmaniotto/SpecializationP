@@ -12,6 +12,9 @@ class UInputMappingContext;
 class UCurveFloat;
 struct FInputActionValue;
 
+UDELEGATE()
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAtmoForce, FVector, AtmoDir, float, Magnitude);
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class SPECIALIZATION_API UFireEngine : public UActorComponent
@@ -43,9 +46,6 @@ protected:
 	UCurveFloat* ThrottleCurve;
 
 	float ThrottleCurveEvaluation = 0;
-
-	/*UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | Throttle", meta = (MakeEditWidget))
-	TArray<FVector> ForcePositions;*/
 
 	UPROPERTY(BlueprintReadWrite, Category = "Movement | Look")
 	bool IsLooking;
@@ -108,4 +108,10 @@ public:
 
 	bool GetOnAir() const { return OnAir; }
 
+	// Atmosphere
+	UFUNCTION(BlueprintCallable)
+	void NotifyAtmoForce(bool Active);
+
+	UPROPERTY(BlueprintAssignable)
+	FOnAtmoForce OnAtmoForce;
 };

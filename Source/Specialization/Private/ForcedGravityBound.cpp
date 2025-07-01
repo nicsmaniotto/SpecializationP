@@ -16,7 +16,13 @@ void UForcedGravityBound::EnlistComponent(UPrimitiveComponent* OtherComp)
 	if (OtherComp->IsSimulatingPhysics())
 	{
 		OtherComp->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-		//OtherComp->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
+
+		FVector LinearVelocity = OtherComp->GetPhysicsLinearVelocity();
+		LinearVelocity.Normalize();
+
+		LinearVelocity *= LinearVelocityAdjusted;
+
+		OtherComp->SetPhysicsLinearVelocity(LinearVelocity);
 	}
 
 	Super::EnlistComponent(OtherComp);

@@ -4,6 +4,7 @@
 #include "GravityBound.h"
 #include <Kismet/KismetMathLibrary.h>
 #include <FireEngine.h>
+#include <Kismet/KismetSystemLibrary.h>
 
 UGravityBound::UGravityBound()
 {
@@ -16,23 +17,6 @@ void UGravityBound::BeginPlay()
 
 	OnComponentBeginOverlap.AddUniqueDynamic(this, &UGravityBound::OnBeginOverlap);
 	OnComponentEndOverlap.AddUniqueDynamic(this, &UGravityBound::OnEndOverlap);
-}
-
-void UGravityBound::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	if (!GravityCurve) return;
-
-	for (UPrimitiveComponent* P : Overlaps)
-	{
-		UFireEngine* FireEngine = P->GetOwner()->GetComponentByClass<UFireEngine>();
-
-		// Execute Gravity
-		FVector Dir = ExecuteGravity(P, FireEngine, LastGForces[FireEngine]);
-
-		AskAlignement(P, FireEngine, Dir);
-	}
 }
 
 void UGravityBound::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -71,13 +55,34 @@ void UGravityBound::UnenlistComponent(UPrimitiveComponent* OtherComp)
 
 	if (FireEngine)
 	{
-		//ExecuteGravity(OtherComp, FireEngine, LastGForce);
 		FireEngine->GravityForce -= LastGForces[FireEngine];
+
+		FireEngine->NotifyAtmoForce(false);
+
 		LastGForces.Remove(FireEngine);
 	}
 }
 
-FVector UGravityBound::ExecuteGravity(UPrimitiveComponent* PrimitiveComponent, UFireEngine* FireEngine, FVector& GravityForce)
+void UGravityBound::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (!GravityCurve) return;
+
+	for (UPrimitiveComponent* P : Overlaps)
+	{
+		UFireEngine* FireEngine = P->GetOwner()->GetComponentByClass<UFireEngine>();
+
+		// Execute Gravity
+		FVector Dir = ExecuteGravity(P, FireEngine);
+
+		AskAlignement(P, FireEngine, Dir);
+
+		AtmosphereVelChange(P, FireEngine, Dir);
+	}
+}
+
+FVector UGravityBound::ExecuteGravity(UPrimitiveComponent* PrimitiveComponent, UFireEngine* FireEngine)
 {
 	FVector COG = UKismetMathLibrary::TransformLocation(GetComponentTransform(), CenterOfGravity);
 
@@ -92,11 +97,11 @@ FVector UGravityBound::ExecuteGravity(UPrimitiveComponent* PrimitiveComponent, U
 	// Update engine gravity force
 	if (FireEngine)
 	{
-		FireEngine->GravityForce -= GravityForce;
+		FireEngine->GravityForce -= LastGForces[FireEngine];
 
-		GravityForce = Dir * GForce * PrimitiveComponent->GetMass();
+		LastGForces[FireEngine] = Dir * GForce * PrimitiveComponent->GetMass();
 
-		FireEngine->GravityForce += GravityForce;
+		FireEngine->GravityForce += LastGForces[FireEngine];
 	}
 
 	return Dir;
@@ -111,13 +116,13 @@ void UGravityBound::AskAlignement(UPrimitiveComponent* PrimitiveComponent, UFire
 
 	FVector TorqueVector = FVector::ZeroVector;
 
-	DrawDebugLine(GetWorld(), PrimitiveComponent->GetComponentLocation(), PrimitiveComponent->GetComponentLocation() + PrimitiveComponent->GetRightVector() * 200, FColor::Green, false, .1f);
+	/*DrawDebugLine(GetWorld(), PrimitiveComponent->GetComponentLocation(), PrimitiveComponent->GetComponentLocation() + PrimitiveComponent->GetRightVector() * 200, FColor::Green, false, .1f);
 	DrawDebugLine(GetWorld(), PrimitiveComponent->GetComponentLocation(), PrimitiveComponent->GetComponentLocation() + RefAxisForward * 200, FColor::Red, false, .1f);
-	DrawDebugLine(GetWorld(), PrimitiveComponent->GetComponentLocation(), PrimitiveComponent->GetComponentLocation() + -Dir * 200, FColor::Blue, false, .1f);
+	DrawDebugLine(GetWorld(), PrimitiveComponent->GetComponentLocation(), PrimitiveComponent->GetComponentLocation() + -Dir * 200, FColor::Blue, false, .1f);*/
 
-	if (!FMath::IsNearlyZero(1 - FMath::Abs(FVector::DotProduct(-Dir, PrimitiveComponent->GetUpVector())), .02f))
+	if (1 - FVector::DotProduct(-Dir, PrimitiveComponent->GetUpVector()) > .02f)
 	{
-		if (FVector::CrossProduct(RefAxisForward, PrimitiveComponent->GetForwardVector()).Length() > .02f)
+		if (FVector::CrossProduct(RefAxisForward, PrimitiveComponent->GetForwardVector()).SquaredLength() > FMath::Square(.02f))
 		{
 			if (FVector::DotProduct(PrimitiveComponent->GetForwardVector(), -Dir) > 0)
 			{
@@ -132,7 +137,7 @@ void UGravityBound::AskAlignement(UPrimitiveComponent* PrimitiveComponent, UFire
 			//P->AddTorqueInDegrees(TorqueVector * RedirectionForce, NAME_None, true);
 		}
 
-		if (FVector::CrossProduct(RefAxisRight, PrimitiveComponent->GetRightVector()).Length() > .02f)
+		if (FVector::CrossProduct(RefAxisRight, PrimitiveComponent->GetRightVector()).SquaredLength() > FMath::Square(.02f))
 		{
 			if (FVector::DotProduct(PrimitiveComponent->GetRightVector(), -Dir) > 0)
 			{
@@ -155,4 +160,53 @@ void UGravityBound::AskAlignement(UPrimitiveComponent* PrimitiveComponent, UFire
 	}
 }
 
+void UGravityBound::AtmosphereVelChange(UPrimitiveComponent* PrimitiveComponent, UFireEngine* FireEngine, FVector Dir)
+{
+	if (!HasAtmoVelChange) return;
 
+	FVector Start = GetComponentLocation() - GetUpVector() * (AtmoCheckHeight - AtmoCheckRadius);
+	FVector End = GetComponentLocation() + GetUpVector() * (AtmoCheckHeight - AtmoCheckRadius);
+
+	TArray<FHitResult> Hits;
+
+	if (ShowAtmoInner)
+	{
+		UKismetSystemLibrary::SphereTraceMultiForObjects(GetWorld(), Start, End, AtmoCheckRadius, { UEngineTypes::ConvertToObjectType(ECC_PhysicsBody) },
+			false, { GetOwner() }, EDrawDebugTrace::ForOneFrame, Hits, true, FLinearColor::Yellow, FLinearColor::Yellow);
+	}
+
+	bool Found = false;
+	for (FHitResult& Hit : Hits)
+	{
+		if (Hit.GetComponent() == PrimitiveComponent)
+		{
+			Found = true;
+			break;
+		}
+	}
+
+	if (Found)
+	{
+		FireEngine->NotifyAtmoForce(false);
+		return;
+	}
+
+	FireEngine->NotifyAtmoForce(true);
+
+	FVector VelocityDir = PrimitiveComponent->GetPhysicsLinearVelocity();
+
+	if (VelocityDir.SquaredLength() < FMath::Square(MinAtmoVelocity)) return;
+
+	VelocityDir.Normalize();
+
+	float DotP = FVector::DotProduct(VelocityDir, -Dir);
+
+	if (FMath::IsNearlyZero(DotP, AtmoDotValue))
+	{
+		//GEngine->AddOnScreenDebugMessage(-1, .01f, FColor::Yellow, FString::Printf(TEXT("Dot: %f -> Adding Velocity"), DotP));
+
+		VelocityDir = FVector::VectorPlaneProject(VelocityDir, -Dir);
+
+		PrimitiveComponent->AddForce(VelocityDir * PrimitiveComponent->GetMass() * VelChangeValue);
+	}
+}

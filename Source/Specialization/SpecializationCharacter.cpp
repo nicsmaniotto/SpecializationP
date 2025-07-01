@@ -11,6 +11,7 @@
 #include "InputActionValue.h"
 #include "Engine/LocalPlayer.h"
 #include "Spaceship.h"
+#include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -56,6 +57,8 @@ void ASpecializationCharacter::BeginPlay()
 		}
 	}
 
+	SetSpaceship();
+
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -93,8 +96,11 @@ void ASpecializationCharacter::Move(const FInputActionValue& Value)
 	if (Controller != nullptr)
 	{
 		// add movement 
-		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
-		AddMovementInput(GetActorRightVector(), MovementVector.X);
+		/*AddMovementInput(GetActorForwardVector(), MovementVector.Y);
+		AddMovementInput(GetActorRightVector(), MovementVector.X);*/
+
+		GetCapsuleComponent()->AddImpulse(GetActorForwardVector() * MovementVector.Y, NAME_None, true);
+		GetCapsuleComponent()->AddImpulse(GetActorRightVector() * MovementVector.X, NAME_None, true);
 	}
 }
 
@@ -158,4 +164,11 @@ void ASpecializationCharacter::UnPossess_Implementation()
 			Subsystem->RemoveMappingContext(DefaultMappingContext);
 		}
 	}
+}
+
+void ASpecializationCharacter::SetSpaceship()
+{
+	if (Spaceship) return;
+
+	Spaceship = Cast<ASpaceship>(UGameplayStatics::GetActorOfClass(GetWorld(), ASpaceship::StaticClass()));
 }

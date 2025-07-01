@@ -40,10 +40,6 @@ ASpaceship::ASpaceship()
 void ASpaceship::BeginPlay()
 {
 	Super::BeginPlay();
-
-	ASpecializationCharacter* Player = Cast<ASpecializationCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
-	Player->SetSpaceship(this);
-
 }
 
 // Called every frame

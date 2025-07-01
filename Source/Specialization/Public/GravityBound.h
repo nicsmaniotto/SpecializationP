@@ -44,17 +44,41 @@ protected:
 	UFUNCTION()
 	void OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-
 	UPROPERTY(BlueprintReadWrite, Category = "Gravity")
 	TArray< UPrimitiveComponent*> Overlaps;
 
 	/*Returns the gravity direction*/
-	FVector ExecuteGravity(UPrimitiveComponent* PrimitiveComponent, UFireEngine* FireEngine, FVector& GravityForce);
+	FVector ExecuteGravity(UPrimitiveComponent* PrimitiveComponent, UFireEngine* FireEngine);
 
 	/*Acknowledges the fire engine involved of how to alignate with the gravity axis*/
 	void AskAlignement(UPrimitiveComponent* PrimitiveComponent, UFireEngine* FireEngine, FVector Dir);
 
+	UPROPERTY()
 	TMap<UFireEngine*, FVector> LastGForces;
+
+	/*Atmosphere vel change*/
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool ShowAtmoInner = true;
+
+	void AtmosphereVelChange(UPrimitiveComponent* PrimitiveComponent, UFireEngine* FireEngine, FVector Dir);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")
+	bool HasAtmoVelChange = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")
+	float MinAtmoVelocity = 1000;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")
+	float AtmoCheckRadius = 500;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")
+	float AtmoCheckHeight = 500;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")
+	float AtmoDotValue = .2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")
+	float VelChangeValue = 15000;
 
 public:
 	virtual void EnlistComponent(UPrimitiveComponent* OtherComp);
