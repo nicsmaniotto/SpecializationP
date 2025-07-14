@@ -18,7 +18,6 @@ ASpaceship::ASpaceship()
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(RootComponent);
@@ -33,7 +32,6 @@ ASpaceship::ASpaceship()
 
 	// Create fire engine
 	FireEngine = CreateDefaultSubobject<UFireEngine>(TEXT("Fire Engine"));
-
 }
 
 // Called when the game starts or when spawned

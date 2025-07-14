@@ -55,7 +55,7 @@ void UGravityBound::UnenlistComponent(UPrimitiveComponent* OtherComp)
 
 	if (FireEngine)
 	{
-		FireEngine->GravityForce -= LastGForces[FireEngine];
+		FireEngine->UpdateGravityForce(LastGForces[FireEngine], FVector::ZeroVector);
 
 		FireEngine->NotifyAtmoForce(false);
 
@@ -97,11 +97,10 @@ FVector UGravityBound::ExecuteGravity(UPrimitiveComponent* PrimitiveComponent, U
 	// Update engine gravity force
 	if (FireEngine)
 	{
-		FireEngine->GravityForce -= LastGForces[FireEngine];
-
+		FVector OldGForce = LastGForces[FireEngine];
 		LastGForces[FireEngine] = Dir * GForce * PrimitiveComponent->GetMass();
 
-		FireEngine->GravityForce += LastGForces[FireEngine];
+		FireEngine->UpdateGravityForce(OldGForce, LastGForces[FireEngine]);
 	}
 
 	return Dir;

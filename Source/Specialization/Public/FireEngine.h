@@ -29,7 +29,7 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	UMeshComponent* OwnerMesh;
+	UPrimitiveComponent* OwnerPhysicsComponent;
 
 public:	
 	// Called every frame
@@ -76,6 +76,9 @@ protected:
 	UFUNCTION()
 	void AdjustDirection();
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | General", meta = (MakeEditWidget))
+	FVector FeetPosition;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | General")
 	float AirCheckRadius = 100;
 
@@ -85,26 +88,28 @@ protected:
 
 	bool IsMoving = false;
 
-public:
-	void Move(const FInputActionValue& Value);
-	void StopMove(const FInputActionValue& Value);
-
-	void Throttle(const FInputActionValue& Value);
-	void EndThrottle(const FInputActionValue& Value);
-
-	void Reverse(const FInputActionValue& Value);
-	void StopReverse(const FInputActionValue& Value);
-
-	void VerticalMovement(float GravityMultiplier);
-
-	void StartLook(const FInputActionValue& Value);
-	void Look(const FInputActionValue& Value);
-	void StopLook(const FInputActionValue& Value);
-
-	void AskReposition(FVector RepositionTorqueForce, bool ForceReposition = false);
-	void StopReposition();
-
 	FVector GravityForce;
+
+public:
+	virtual void Move(const FInputActionValue& Value);
+	virtual void StopMove(const FInputActionValue& Value);
+
+	virtual void Throttle(const FInputActionValue& Value);
+	virtual void EndThrottle(const FInputActionValue& Value);
+
+	virtual void Reverse(const FInputActionValue& Value);
+	virtual void StopReverse(const FInputActionValue& Value);
+
+	virtual void VerticalMovement(float GravityMultiplier);
+
+	virtual void StartLook(const FInputActionValue& Value);
+	virtual void Look(const FInputActionValue& Value);
+	virtual void StopLook(const FInputActionValue& Value);
+
+	virtual void AskReposition(FVector RepositionTorqueForce, bool ForceReposition = false);
+	virtual void StopReposition();
+
+	virtual void UpdateGravityForce(FVector OldGForce, FVector NewGForce);
 
 	bool GetOnAir() const { return OnAir; }
 

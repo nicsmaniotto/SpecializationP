@@ -18,13 +18,13 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
-UCLASS(config=Game)
+UCLASS(config = Game)
 class ASpecializationCharacter : public ACharacter, public IPossessable
 {
 	GENERATED_BODY()
 
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
-	UPROPERTY(VisibleDefaultsOnly, Category=Mesh)
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	USkeletalMeshComponent* Mesh1P;
 
 	/** First person camera */
@@ -32,29 +32,42 @@ class ASpecializationCharacter : public ACharacter, public IPossessable
 	UCameraComponent* FirstPersonCameraComponent;
 
 	/** MappingContext */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputMappingContext* DefaultMappingContext;
 
 	/** Jump Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
 
 	/** Move Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
-	
+
+	/** Throttle Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ThrottleAction;
+
+	/** Reverse Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ReverseAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
+	class UJetpack* Jetpack;
+
 	/** Interact Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* InteractAction;
-	
+
 public:
 	ASpecializationCharacter();
 
 protected:
 	virtual void BeginPlay();
 
+	void Tick(float DeltaSeconds) override;
+
 public:
-		
+
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
@@ -74,10 +87,11 @@ public:
 protected:
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
+	void StopMove(const FInputActionValue& Value);
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
-	
+
 	/** Called for looking input */
 	void StartInteract(const FInputActionValue& Value);
 	void StopInteract(const FInputActionValue& Value);
@@ -86,8 +100,6 @@ protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	// End of APawn interface
-
-
 
 public:
 	/** Returns Mesh1P subobject **/
@@ -99,14 +111,26 @@ public:
 
 	UFUNCTION()
 	void Possess_Implementation(APawn* Possesser);
-	
+
 	void UnPossess();
 
 	UFUNCTION()
 	void UnPossess_Implementation();
 
+	// Movement
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	bool bOnJetpack = false;
 
-// Spaceship
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float Speed = 100;
+
+	// Look
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Look, meta = (AllowPrivateAccess = "true"))
+	float TorqueForce = 100;
+
+	// Spaceship
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	ASpaceship* Spaceship;
@@ -114,9 +138,17 @@ protected:
 public:
 	UFUNCTION(BlueprintCallable)
 	ASpaceship* GetSpaceship() const { return Spaceship; }
-	
+
 	UFUNCTION(BlueprintCallable)
 	void SetSpaceship();
+
+	// Jetpack
+protected:
+	void Throttle(const FInputActionValue& Value);
+	void EndThrottle(const FInputActionValue& Value);
+
+	void Reverse(const FInputActionValue& Value);
+	void EndReverse(const FInputActionValue& Value);
 
 };
 

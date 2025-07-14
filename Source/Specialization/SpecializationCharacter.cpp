@@ -12,6 +12,8 @@
 #include "Engine/LocalPlayer.h"
 #include "Spaceship.h"
 #include "Kismet/GameplayStatics.h"
+#include <Kismet/KismetMathLibrary.h>
+#include <Jetpack.h>
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -41,6 +43,8 @@ ASpecializationCharacter::ASpecializationCharacter()
 	//Mesh1P->SetRelativeRotation(FRotator(0.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 
+	// Create fire engine
+	Jetpack = CreateDefaultSubobject<UJetpack>(TEXT("Jetpack"));
 }
 
 void ASpecializationCharacter::BeginPlay()
@@ -61,6 +65,17 @@ void ASpecializationCharacter::BeginPlay()
 
 }
 
+void ASpecializationCharacter::Tick(float DeltaSeconds)
+{
+	if (!GetController()) return;
+
+	// camera pitch movement
+	FRotator r = FirstPersonCameraComponent->GetRelativeRotation();
+	r.Pitch = GetController()->GetControlRotation().Pitch;
+
+	FirstPersonCameraComponent->SetRelativeRotation(r);
+}
+
 //////////////////////////////////////////////////////////////////////////// Input
 
 void ASpecializationCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -74,6 +89,16 @@ void ASpecializationCharacter::SetupPlayerInputComponent(UInputComponent* Player
 
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASpecializationCharacter::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &ASpecializationCharacter::StopMove);
+
+		// Jetpack
+		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Ongoing, this, &ASpecializationCharacter::Throttle);
+		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Completed, this, &ASpecializationCharacter::EndThrottle);
+		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Canceled, this, &ASpecializationCharacter::EndThrottle);
+
+		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Ongoing, this, &ASpecializationCharacter::Reverse);
+		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Completed, this, &ASpecializationCharacter::EndReverse);
+		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Canceled, this, &ASpecializationCharacter::EndReverse);
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASpecializationCharacter::Look);
@@ -93,15 +118,23 @@ void ASpecializationCharacter::Move(const FInputActionValue& Value)
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
+	if (bOnJetpack && Jetpack->GetOnAir())
+	{
+		Jetpack->Move(Value);
+		return;
+	}
+
 	if (Controller != nullptr)
 	{
 		// add movement 
-		/*AddMovementInput(GetActorForwardVector(), MovementVector.Y);
-		AddMovementInput(GetActorRightVector(), MovementVector.X);*/
-
-		GetCapsuleComponent()->AddImpulse(GetActorForwardVector() * MovementVector.Y, NAME_None, true);
-		GetCapsuleComponent()->AddImpulse(GetActorRightVector() * MovementVector.X, NAME_None, true);
+		GetCapsuleComponent()->AddImpulse(GetActorForwardVector() * MovementVector.Y * Speed, NAME_None, true);
+		GetCapsuleComponent()->AddImpulse(GetActorRightVector() * MovementVector.X * Speed, NAME_None, true);
 	}
+}
+
+void ASpecializationCharacter::StopMove(const FInputActionValue& Value)
+{
+	if (bOnJetpack) Jetpack->StopMove(Value);
 }
 
 void ASpecializationCharacter::Look(const FInputActionValue& Value)
@@ -112,21 +145,18 @@ void ASpecializationCharacter::Look(const FInputActionValue& Value)
 	if (Controller != nullptr)
 	{
 		// add yaw and pitch input to controller
-		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+
+	GetCapsuleComponent()->AddTorqueInDegrees(GetCapsuleComponent()->GetUpVector() * LookAxisVector.X * FMath::Square(TorqueForce), NAME_None, true);
 }
 
 void ASpecializationCharacter::StartInteract(const FInputActionValue& Value)
 {
-	//UnPossess();
-	
 	IPossessable::Execute_UnPossess(this);
 
 	if (Spaceship->GetClass()->ImplementsInterface(UPossessable::StaticClass()))
 		IPossessable::Execute_Possess(Spaceship, this);
-
-	//Spaceship->Possess(this);
 }
 
 void ASpecializationCharacter::StopInteract(const FInputActionValue& Value)
@@ -171,4 +201,30 @@ void ASpecializationCharacter::SetSpaceship()
 	if (Spaceship) return;
 
 	Spaceship = Cast<ASpaceship>(UGameplayStatics::GetActorOfClass(GetWorld(), ASpaceship::StaticClass()));
+}
+
+void ASpecializationCharacter::Throttle(const FInputActionValue& Value)
+{
+	if (bOnJetpack)
+	{
+		Jetpack->Throttle(Value);
+	}
+}
+
+void ASpecializationCharacter::EndThrottle(const FInputActionValue& Value)
+{
+	Jetpack->EndThrottle(Value);
+}
+
+void ASpecializationCharacter::Reverse(const FInputActionValue& Value)
+{
+	if (bOnJetpack && Jetpack->GetOnAir())
+	{
+		Jetpack->Reverse(Value);
+	}
+}
+
+void ASpecializationCharacter::EndReverse(const FInputActionValue& Value)
+{
+	Jetpack->StopReverse(Value);
 }

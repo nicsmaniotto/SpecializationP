@@ -22,8 +22,19 @@ void UFireEngine::BeginPlay()
 {
 	Super::BeginPlay();
 
-	OwnerMesh = GetOwner()->GetComponentByClass<UMeshComponent>();
+	TArray<UActorComponent*> Components;
 
+	Components = GetOwner()->K2_GetComponentsByClass(UPrimitiveComponent::StaticClass());
+
+	for (UActorComponent* AC : Components)
+	{
+		UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(AC);
+
+		if (Primitive && Primitive->IsSimulatingPhysics())
+		{
+			OwnerPhysicsComponent = Primitive;
+		}
+	}
 }
 
 
@@ -46,10 +57,10 @@ bool UFireEngine::AirChecker()
 {
 	TArray<UPrimitiveComponent*> Hits;
 
-	UKismetSystemLibrary::SphereOverlapComponents(GetWorld(), OwnerMesh->GetComponentLocation(), AirCheckRadius, { EObjectTypeQuery::ObjectTypeQuery1 },
-		UStaticMeshComponent::StaticClass(), { GetOwner() }, Hits);
+	FVector Loc = UKismetMathLibrary::TransformLocation(GetOwner()->GetTransform(), FeetPosition);
 
-	//DrawDebugSphere(GetWorld(), OwnerMesh->GetComponentLocation(), AirCheckRadius, 32, FColor::Yellow, false, .1f);
+	UKismetSystemLibrary::SphereOverlapComponents(GetWorld(), Loc, AirCheckRadius,
+		{ EObjectTypeQuery::ObjectTypeQuery1 }, UStaticMeshComponent::StaticClass(), { GetOwner() }, Hits);
 
 	return Hits.Num() == 0;
 }
@@ -62,10 +73,10 @@ void UFireEngine::Move(const FInputActionValue& Value)
 	LookAxisVector.Normalize();
 
 	//FVector FinalDir = UKismetMathLibrary::TransformDirection(GetOwner()->GetTransform(), FVector(LookAxisVector.Y, LookAxisVector.X, 0));
-	FVector FinalDir = OwnerMesh->GetForwardVector() * LookAxisVector.Y + OwnerMesh->GetRightVector() * LookAxisVector.X;
+	FVector FinalDir = OwnerPhysicsComponent->GetForwardVector() * LookAxisVector.Y + OwnerPhysicsComponent->GetRightVector() * LookAxisVector.X;
 	FinalDir.Normalize();
 
-	OwnerMesh->AddForce(FinalDir * FMath::Square(LateralMoveForce) * OwnerMesh->GetMass());
+	OwnerPhysicsComponent->AddForce(FinalDir * FMath::Square(LateralMoveForce) * OwnerPhysicsComponent->GetMass());
 }
 
 void UFireEngine::StopMove(const FInputActionValue& Value)
@@ -99,7 +110,7 @@ void UFireEngine::StopReverse(const FInputActionValue& Value)
 
 void UFireEngine::VerticalMovement(float GravityMultiplier)
 {
-	FVector Throttle = OwnerMesh->GetUpVector();
+	FVector Throttle = OwnerPhysicsComponent->GetUpVector();
 	//Throttle.Normalize();
 	Throttle *= GravityMultiplier;
 
@@ -112,7 +123,7 @@ void UFireEngine::VerticalMovement(float GravityMultiplier)
 		ThrottleCurveEvaluation = FMath::Min(ThrottleCurveEvaluation + GetWorld()->GetDeltaSeconds(), 10); // random big number to not overflow float value
 	}
 
-	OwnerMesh->AddForce(Throttle * FMath::Square(ThrottleForce) * OwnerMesh->GetMass());
+	OwnerPhysicsComponent->AddForce(Throttle * FMath::Square(ThrottleForce) * OwnerPhysicsComponent->GetMass());
 
 	//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Throttle: %f - %f - %f"), Throttle.X, Throttle.Y, Throttle.Z));
 }
@@ -132,11 +143,11 @@ void UFireEngine::Look(const FInputActionValue& Value)
 
 	FVector FinalDir = UKismetMathLibrary::InverseTransformDirection(GetOwner()->GetTransform(), GetOwner()->GetActorUpVector()) * LookAxisVector.X;
 
-	OwnerMesh->AddTorqueInDegrees(GetOwner()->GetActorUpVector() * LookAxisVector.X * FMath::Square(TorqueForce), NAME_None, true);
+	OwnerPhysicsComponent->AddTorqueInDegrees(GetOwner()->GetActorUpVector() * LookAxisVector.X * FMath::Square(TorqueForce), NAME_None, true);
 
 	FinalDir = UKismetMathLibrary::TransformDirection(GetOwner()->GetTransform(), GetOwner()->GetActorRightVector()) * LookAxisVector.Y;
 
-	OwnerMesh->AddTorqueInDegrees(GetOwner()->GetActorRightVector() * LookAxisVector.Y * FMath::Square(TorqueForce), NAME_None, true);
+	OwnerPhysicsComponent->AddTorqueInDegrees(GetOwner()->GetActorRightVector() * LookAxisVector.Y * FMath::Square(TorqueForce), NAME_None, true);
 
 	GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Looking: %f - %f - %f"), FinalDir.X, FinalDir.Y, FinalDir.Z));
 
@@ -149,7 +160,7 @@ void UFireEngine::StopLook(const FInputActionValue& Value)
 
 void UFireEngine::AskReposition(FVector RepositionTorqueForce, bool ForceReposition)
 {
-	if(!ForceReposition)
+	if (!ForceReposition)
 	{
 		//if (IsLooking || IsMoving) return;
 		if (IsLooking) return;
@@ -163,7 +174,7 @@ void UFireEngine::AskReposition(FVector RepositionTorqueForce, bool ForceReposit
 
 	IsRepositioning = true;
 
-	OwnerMesh->AddTorqueInDegrees(RepositionTorqueForce, NAME_None, true);
+	OwnerPhysicsComponent->AddTorqueInDegrees(RepositionTorqueForce, NAME_None, true);
 
 	GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Repositioning")));
 }
@@ -173,9 +184,15 @@ void UFireEngine::StopReposition()
 	IsRepositioning = false;
 }
 
+void UFireEngine::UpdateGravityForce(FVector OldGForce, FVector NewGForce)
+{
+	GravityForce -= OldGForce;
+	GravityForce += NewGForce;
+}
+
 void UFireEngine::NotifyAtmoForce(bool Active)
 {
-	if (!this || !OwnerMesh) return;
+	if (!this || !OwnerPhysicsComponent) return;
 
 	if (!Active)
 	{
@@ -194,10 +211,10 @@ void UFireEngine::AdjustDirection()
 {
 	if (!(IsLooking || IsRepositioning))
 	{
-		FVector AngularVelocity = OwnerMesh->GetPhysicsAngularVelocityInDegrees();
+		FVector AngularVelocity = OwnerPhysicsComponent->GetPhysicsAngularVelocityInDegrees();
 		AngularVelocity = UKismetMathLibrary::VLerp(AngularVelocity, FVector::ZeroVector, GetWorld()->GetDeltaSeconds() * AngularVelocityDeterrent);
 
-		OwnerMesh->SetPhysicsAngularVelocityInDegrees(AngularVelocity);
+		OwnerPhysicsComponent->SetPhysicsAngularVelocityInDegrees(AngularVelocity);
 
 		//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::White, FString::Printf(TEXT("Angular Velocity: %f - %f - %f"), AngularVelocity.X, AngularVelocity.Y, AngularVelocity.Z));
 	}
