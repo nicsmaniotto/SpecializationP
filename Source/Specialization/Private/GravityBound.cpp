@@ -119,9 +119,9 @@ void UGravityBound::AskAlignement(UPrimitiveComponent* PrimitiveComponent, UFire
 	DrawDebugLine(GetWorld(), PrimitiveComponent->GetComponentLocation(), PrimitiveComponent->GetComponentLocation() + RefAxisForward * 200, FColor::Red, false, .1f);
 	DrawDebugLine(GetWorld(), PrimitiveComponent->GetComponentLocation(), PrimitiveComponent->GetComponentLocation() + -Dir * 200, FColor::Blue, false, .1f);*/
 
-	if (1 - FVector::DotProduct(-Dir, PrimitiveComponent->GetUpVector()) > .02f)
+	if (1 - FVector::DotProduct(-Dir, PrimitiveComponent->GetUpVector()) > .01f)
 	{
-		if (FVector::CrossProduct(RefAxisForward, PrimitiveComponent->GetForwardVector()).SquaredLength() > FMath::Square(.02f))
+		if (FVector::CrossProduct(RefAxisForward, PrimitiveComponent->GetForwardVector()).SquaredLength() > FMath::Square(.01f))
 		{
 			if (FVector::DotProduct(PrimitiveComponent->GetForwardVector(), -Dir) > 0)
 			{
@@ -136,7 +136,7 @@ void UGravityBound::AskAlignement(UPrimitiveComponent* PrimitiveComponent, UFire
 			//P->AddTorqueInDegrees(TorqueVector * RedirectionForce, NAME_None, true);
 		}
 
-		if (FVector::CrossProduct(RefAxisRight, PrimitiveComponent->GetRightVector()).SquaredLength() > FMath::Square(.02f))
+		if (FVector::CrossProduct(RefAxisRight, PrimitiveComponent->GetRightVector()).SquaredLength() > FMath::Square(.01f))
 		{
 			if (FVector::DotProduct(PrimitiveComponent->GetRightVector(), -Dir) > 0)
 			{

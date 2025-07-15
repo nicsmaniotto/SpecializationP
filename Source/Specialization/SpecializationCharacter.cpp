@@ -67,6 +67,8 @@ void ASpecializationCharacter::BeginPlay()
 
 void ASpecializationCharacter::Tick(float DeltaSeconds)
 {
+	Super::Tick(DeltaSeconds);
+
 	if (!GetController()) return;
 
 	// camera pitch movement
@@ -153,10 +155,9 @@ void ASpecializationCharacter::Look(const FInputActionValue& Value)
 
 void ASpecializationCharacter::StartInteract(const FInputActionValue& Value)
 {
-	IPossessable::Execute_UnPossess(this);
+	if(!CurrentInteractable || !IsValid(CurrentInteractable->_getUObject())) return;
 
-	if (Spaceship->GetClass()->ImplementsInterface(UPossessable::StaticClass()))
-		IPossessable::Execute_Possess(Spaceship, this);
+	IInteractable::Execute_Interact(CurrentInteractable->_getUObject(), this);
 }
 
 void ASpecializationCharacter::StopInteract(const FInputActionValue& Value)

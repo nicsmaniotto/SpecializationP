@@ -62,6 +62,8 @@ bool UFireEngine::AirChecker()
 	UKismetSystemLibrary::SphereOverlapComponents(GetWorld(), Loc, AirCheckRadius,
 		{ EObjectTypeQuery::ObjectTypeQuery1 }, UStaticMeshComponent::StaticClass(), { GetOwner() }, Hits);
 
+	DrawDebugSphere(GetWorld(), Loc, AirCheckRadius, 32, FColor::Emerald, false, .01f);
+
 	return Hits.Num() == 0;
 }
 

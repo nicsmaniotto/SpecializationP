@@ -51,3 +51,10 @@ void UJetpack::UpdateGravityForce(FVector OldGForce, FVector NewGForce)
 		// notify propulsion not needed
 	}
 }
+
+void UJetpack::AskReposition(FVector RepositionTorqueForce, bool ForceReposition)
+{
+	if (!OnAir) return;
+
+	Super::AskReposition(RepositionTorqueForce, ForceReposition);
+}

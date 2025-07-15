@@ -11,6 +11,7 @@
 #include <Specialization/SpecializationCharacter.h>
 #include <Kismet/KismetMathLibrary.h>
 #include <FireEngine.h>
+#include <InteractableComponent.h>
 
 // Sets default values
 ASpaceship::ASpaceship()
@@ -32,6 +33,10 @@ ASpaceship::ASpaceship()
 
 	// Create fire engine
 	FireEngine = CreateDefaultSubobject<UFireEngine>(TEXT("Fire Engine"));
+
+	// CreateInteractionComponent
+	InteractComponent = CreateDefaultSubobject<UInteractableComponent>(TEXT("Interact Component"));
+	InteractComponent->SetupAttachment(Mesh);
 }
 
 // Called when the game starts or when spawned
@@ -101,6 +106,13 @@ void ASpaceship::UnPossess_Implementation()
 			Subsystem->RemoveMappingContext(SpaceshipMappingContext);
 		}
 	}
+}
+
+void ASpaceship::Interact_Implementation(ASpecializationCharacter* Player)
+{
+	IPossessable::Execute_UnPossess(Player);
+
+	IPossessable::Execute_Possess(this, Player);
 }
 
 void ASpaceship::Move(const FInputActionValue& Value)

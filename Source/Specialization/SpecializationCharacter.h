@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "Possessable.h"
+#include "Interactable.h"
 #include "SpecializationCharacter.generated.h"
 
 class UInputComponent;
@@ -149,6 +150,12 @@ protected:
 
 	void Reverse(const FInputActionValue& Value);
 	void EndReverse(const FInputActionValue& Value);
+
+	// Interaction
+public:
+	UPROPERTY(BlueprintReadWrite, Category = "Interaction")
+	TScriptInterface<IInteractable> CurrentInteractable;
+
 
 };
 

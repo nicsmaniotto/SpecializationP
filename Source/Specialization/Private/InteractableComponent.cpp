@@ -1,0 +1,66 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "InteractableComponent.h"
+#include "Specialization/SpecializationCharacter.h"
+
+void UInteractableComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	FillInteractComponents();
+
+	OnComponentBeginOverlap.AddUniqueDynamic(this, &UInteractableComponent::OnBeginOverlap);
+	OnComponentEndOverlap.AddUniqueDynamic(this, &UInteractableComponent::OnEndOverlap);
+}
+
+void UInteractableComponent::FillInteractComponents()
+{
+	AActor* Owner = GetOwner();
+
+	if (Owner->GetClass()->ImplementsInterface(UInteractable::StaticClass()))
+	{
+		InteractObjects.Add(Owner);
+	}
+
+	//TArray<UActorComponent*> Children = Owner->GetComponentsByInterface(UInteractable::StaticClass());
+
+	InteractObjects.Append(Owner->GetComponentsByInterface(UInteractable::StaticClass()));
+
+	InteractObjects.Remove(this);
+
+	if (InteractObjects.Num() == 0) DestroyComponent();
+}
+
+void UInteractableComponent::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	ASpecializationCharacter* P = Cast<ASpecializationCharacter>(OtherActor);
+
+	if (!P) return;
+
+	Player = P;
+	Player->CurrentInteractable = this;
+}
+
+void UInteractableComponent::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	ASpecializationCharacter* P = Cast<ASpecializationCharacter>(OtherActor);
+
+	if (!P) return;
+
+	if (Player->CurrentInteractable == this) Player->CurrentInteractable = nullptr;
+	
+	Player = nullptr;
+}
+
+void UInteractableComponent::Interact_Implementation(ASpecializationCharacter* _Player)
+{
+	if(!Player) return;
+
+	for (TScriptInterface<IInteractable> I : InteractObjects)
+	{
+		IInteractable::Execute_Interact(I->_getUObject(), Player);
+	}
+}
+
+

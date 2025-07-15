@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "Possessable.h"
+#include "Interactable.h"
 #include "Spaceship.generated.h"
 
 class APlayerController;
@@ -13,7 +14,7 @@ class UInputMappingContext;
 struct FInputActionValue;
 
 UCLASS()
-class SPECIALIZATION_API ASpaceship : public APawn, public IPossessable
+class SPECIALIZATION_API ASpaceship : public APawn, public IPossessable, public IInteractable
 {
 	GENERATED_BODY()
 
@@ -51,6 +52,9 @@ class SPECIALIZATION_API ASpaceship : public APawn, public IPossessable
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	class UFireEngine* FireEngine;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
+	class UInteractableComponent* InteractComponent;
 
 public:
 	// Sets default values for this pawn's properties
@@ -74,6 +78,8 @@ public:
 
 	UFUNCTION()
 	void UnPossess_Implementation();
+	
+	void Interact_Implementation(ASpecializationCharacter* Player) override;
 
 	// Movement
 protected:
