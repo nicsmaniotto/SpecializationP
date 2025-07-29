@@ -27,6 +27,9 @@ class ASpecializationCharacter : public ACharacter, public IPossessable
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	USkeletalMeshComponent* Mesh1P;
+	
+	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
+	UStaticMeshComponent* ConstraintMesh;*/
 
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -118,13 +121,15 @@ public:
 	UFUNCTION()
 	void UnPossess_Implementation();
 
+	AActor* GetPossesser();
+
+	UFUNCTION()
+	AActor* GetPossesser_Implementation() { return nullptr; }
+
 	// Movement
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	bool bOnJetpack = false;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	float Speed = 100;
 
 	// Look
 protected:

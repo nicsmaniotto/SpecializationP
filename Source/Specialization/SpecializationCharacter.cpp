@@ -14,6 +14,7 @@
 #include "Kismet/GameplayStatics.h"
 #include <Kismet/KismetMathLibrary.h>
 #include <Jetpack.h>
+#include <GameFramework/CharacterMovementComponent.h>
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -42,6 +43,9 @@ ASpecializationCharacter::ASpecializationCharacter()
 	Mesh1P->CastShadow = false;
 	//Mesh1P->SetRelativeRotation(FRotator(0.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
+
+	/*ConstraintMesh = CreateDefaultSubobject<UStaticMeshComponent>("Constraint Mesh");
+	ConstraintMesh->SetupAttachment(GetCapsuleComponent());*/
 
 	// Create fire engine
 	Jetpack = CreateDefaultSubobject<UJetpack>(TEXT("Jetpack"));
@@ -76,6 +80,8 @@ void ASpecializationCharacter::Tick(float DeltaSeconds)
 	r.Pitch = GetController()->GetControlRotation().Pitch;
 
 	FirstPersonCameraComponent->SetRelativeRotation(r);
+
+	GetCharacterMovement()->SetActive(false);
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -119,6 +125,9 @@ void ASpecializationCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
+	MovementVector.Normalize();
+
+	GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Move value: %f-%f "), MovementVector.X, MovementVector.Y));
 
 	if (bOnJetpack && Jetpack->GetOnAir())
 	{
@@ -129,8 +138,8 @@ void ASpecializationCharacter::Move(const FInputActionValue& Value)
 	if (Controller != nullptr)
 	{
 		// add movement 
-		GetCapsuleComponent()->AddImpulse(GetActorForwardVector() * MovementVector.Y * Speed, NAME_None, true);
-		GetCapsuleComponent()->AddImpulse(GetActorRightVector() * MovementVector.X * Speed, NAME_None, true);
+		GetCapsuleComponent()->AddImpulse(GetActorForwardVector() * MovementVector.Y * GetCharacterMovement()->MaxWalkSpeed, NAME_None, true);
+		GetCapsuleComponent()->AddImpulse(GetActorRightVector() * MovementVector.X * GetCharacterMovement()->MaxWalkSpeed, NAME_None, true);
 	}
 }
 
@@ -184,6 +193,11 @@ void ASpecializationCharacter::Possess_Implementation(APawn* Possesser)
 			PlayerController->Possess(this);
 		}
 	}
+
+	SetActorHiddenInGame(false);
+	GetCapsuleComponent()->SetSimulatePhysics(true);
+	SetActorEnableCollision(true);
+	
 }
 
 void ASpecializationCharacter::UnPossess_Implementation()
@@ -195,6 +209,10 @@ void ASpecializationCharacter::UnPossess_Implementation()
 			Subsystem->RemoveMappingContext(DefaultMappingContext);
 		}
 	}
+
+	SetActorHiddenInGame(true);
+	GetCapsuleComponent()->SetSimulatePhysics(false);
+	SetActorEnableCollision(false);
 }
 
 void ASpecializationCharacter::SetSpaceship()

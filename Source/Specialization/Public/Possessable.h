@@ -27,4 +27,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void UnPossess();
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	AActor* GetPossesser();
 };

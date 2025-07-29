@@ -78,8 +78,17 @@ public:
 
 	UFUNCTION()
 	void UnPossess_Implementation();
+
+	UFUNCTION()
+	AActor* GetPossesser_Implementation() { return Possesser; }
 	
 	void Interact_Implementation(ASpecializationCharacter* Player) override;
+
+	UFUNCTION()
+	void OnPossessMidTransition(ASpecializationCharacter* Player);
+	
+	UFUNCTION()
+	void OnUnPossessMidTransition();
 
 	// Movement
 protected:

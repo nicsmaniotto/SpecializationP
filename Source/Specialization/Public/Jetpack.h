@@ -38,6 +38,8 @@ public:
 
 	void UpdateGravityForce(FVector OldGForce, FVector NewGForce) override;
 
-	virtual void AskReposition(FVector RepositionTorqueForce, bool ForceReposition = false) override;
+	virtual void AskReposition(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition = false) override;
+
+	FVector GetGForce() { return GravityForce; }
 
 };

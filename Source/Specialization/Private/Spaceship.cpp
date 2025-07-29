@@ -12,6 +12,7 @@
 #include <Kismet/KismetMathLibrary.h>
 #include <FireEngine.h>
 #include <InteractableComponent.h>
+#include <MyHUD.h>
 
 // Sets default values
 ASpaceship::ASpaceship()
@@ -68,7 +69,7 @@ void ASpaceship::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Ongoing, this, &ASpaceship::Throttle);
 		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Completed, this, &ASpaceship::EndThrottle);
 		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Canceled, this, &ASpaceship::EndThrottle);
-		
+
 		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Ongoing, this, &ASpaceship::Reverse);
 		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Completed, this, &ASpaceship::EndReverse);
 		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Canceled, this, &ASpaceship::EndReverse);
@@ -83,7 +84,7 @@ void ASpaceship::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 
 void ASpaceship::Possess_Implementation(APawn* _Possesser)
 {
-	if (!Possesser) Possesser = _Possesser;
+	Possesser = _Possesser;
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(Possesser->GetController()))
 	{
@@ -106,13 +107,62 @@ void ASpaceship::UnPossess_Implementation()
 			Subsystem->RemoveMappingContext(SpaceshipMappingContext);
 		}
 	}
+
+	Possesser->SetActorLocationAndRotation(InteractComponent->GetComponentLocation(), InteractComponent->GetComponentRotation(), false, nullptr, ETeleportType::TeleportPhysics);
 }
 
 void ASpaceship::Interact_Implementation(ASpecializationCharacter* Player)
 {
+	FOnTransition T;
+	T.BindLambda([&, this, Player]()->void { OnPossessMidTransition(Player); });
+
+	FOnTransitionEnd TE;
+	TE.BindLambda([&]()->void { EnableInput(GetWorld()->GetFirstPlayerController()); });
+
+	AMyHUD* HUD = Cast<AMyHUD>(GetWorld()->GetFirstPlayerController()->GetHUD());
+	if (HUD->ExecuteTransition(T, TE))
+	{
+		DisableInput(GetWorld()->GetFirstPlayerController());
+	}
+}
+
+void ASpaceship::OnPossessMidTransition(ASpecializationCharacter* Player)
+{
 	IPossessable::Execute_UnPossess(Player);
 
 	IPossessable::Execute_Possess(this, Player);
+}
+
+void ASpaceship::StartInteract(const FInputActionValue& Value)
+{
+	FOnTransition T;
+	T.BindLambda([&, this]()->void { OnUnPossessMidTransition(); });
+
+	FOnTransitionEnd TE;
+	TE.BindLambda([&]()->void { EnableInput(GetWorld()->GetFirstPlayerController()); });
+
+	AMyHUD* HUD = Cast<AMyHUD>(GetWorld()->GetFirstPlayerController()->GetHUD());
+	if (HUD->ExecuteTransition(T, TE))
+	{
+		DisableInput(GetWorld()->GetFirstPlayerController());
+	}
+}
+
+void ASpaceship::OnUnPossessMidTransition()
+{
+	IPossessable::Execute_UnPossess(this);
+
+	if (Possesser->GetClass()->ImplementsInterface(UPossessable::StaticClass()))
+	{
+		IPossessable::Execute_Possess(Possesser, this);
+	}
+
+	Possesser = nullptr;
+}
+
+void ASpaceship::StopInteract(const FInputActionValue& Value)
+{
+
 }
 
 void ASpaceship::Move(const FInputActionValue& Value)
@@ -163,16 +213,3 @@ void ASpaceship::StopLook(const FInputActionValue& Value)
 {
 	FireEngine->StopLook(Value);
 }
-
-void ASpaceship::StartInteract(const FInputActionValue& Value)
-{
-	IPossessable::Execute_UnPossess(this);
-
-	if (Possesser->GetClass()->ImplementsInterface(UPossessable::StaticClass()))
-		IPossessable::Execute_Possess(Possesser, this);
-}
-
-void ASpaceship::StopInteract(const FInputActionValue& Value)
-{
-}
-

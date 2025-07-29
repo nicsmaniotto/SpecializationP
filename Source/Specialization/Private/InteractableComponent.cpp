@@ -3,6 +3,7 @@
 
 #include "InteractableComponent.h"
 #include "Specialization/SpecializationCharacter.h"
+#include <MyHUD.h>
 
 void UInteractableComponent::BeginPlay()
 {
@@ -40,6 +41,9 @@ void UInteractableComponent::OnBeginOverlap(UPrimitiveComponent* OverlappedCompo
 
 	Player = P;
 	Player->CurrentInteractable = this;
+
+	AMyHUD* HUD = Cast<AMyHUD>(GetWorld()->GetFirstPlayerController()->GetHUD());
+	HUD->AskToggleWidget(true, EWidgetType::INTERACT);
 }
 
 void UInteractableComponent::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -51,6 +55,9 @@ void UInteractableComponent::OnEndOverlap(UPrimitiveComponent* OverlappedCompone
 	if (Player->CurrentInteractable == this) Player->CurrentInteractable = nullptr;
 	
 	Player = nullptr;
+
+	AMyHUD* HUD = Cast<AMyHUD>(GetWorld()->GetFirstPlayerController()->GetHUD());
+	HUD->AskToggleWidget(false, EWidgetType::INTERACT);
 }
 
 void UInteractableComponent::Interact_Implementation(ASpecializationCharacter* _Player)

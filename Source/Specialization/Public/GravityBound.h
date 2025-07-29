@@ -63,6 +63,9 @@ protected:
 	void AtmosphereVelChange(UPrimitiveComponent* PrimitiveComponent, UFireEngine* FireEngine, FVector Dir);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")
+	bool bReverseAlignmentDir = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")
 	bool HasAtmoVelChange = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")

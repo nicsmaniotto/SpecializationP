@@ -9,6 +9,19 @@ void UJetpack::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	HandlePropSpeed(DeltaTime);
+
+	/*if (GravityForce != FVector::ZeroVector)
+	{
+		FVector GravityDir = -GravityForce;
+		GravityDir.Normalize();
+		FVector NewFor = FVector::VectorPlaneProject(GetOwner()->GetActorRightVector(), GravityDir).RotateAngleAxis(-90, GravityDir);
+
+		FRotator r = UKismetMathLibrary::FindLookAtRotation(GetOwner()->GetActorLocation(), GetOwner()->GetActorLocation() + NewFor);
+		r = UKismetMathLibrary::RLerp(GetOwner()->GetActorRotation(), r, 20 * DeltaTime, true);
+
+		DrawDebugLine(GetWorld(), GetOwner()->GetActorLocation(), GetOwner()->GetActorLocation() + NewFor * 200, FColor::Red, false, .1f);
+		GetOwner()->SetActorRotation(r.Quaternion(), ETeleportType::TeleportPhysics);
+	}*/
 }
 
 void UJetpack::HandlePropSpeed(float DeltaTime)
@@ -52,9 +65,12 @@ void UJetpack::UpdateGravityForce(FVector OldGForce, FVector NewGForce)
 	}
 }
 
-void UJetpack::AskReposition(FVector RepositionTorqueForce, bool ForceReposition)
+void UJetpack::AskReposition(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition)
 {
-	if (!OnAir) return;
+	//if (!OnAir || !OwnerPhysicsComponent->IsSimulatingPhysics()) return;
+	if (!OwnerPhysicsComponent->IsSimulatingPhysics()) return;
 
-	Super::AskReposition(RepositionTorqueForce, ForceReposition);
+	Super::AskReposition(RepositionType, RepositionTorqueForce, ForceReposition);
+
+
 }

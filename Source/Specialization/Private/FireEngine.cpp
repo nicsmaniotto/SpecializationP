@@ -33,8 +33,11 @@ void UFireEngine::BeginPlay()
 		if (Primitive && Primitive->IsSimulatingPhysics())
 		{
 			OwnerPhysicsComponent = Primitive;
+			break;
 		}
 	}
+
+	OwnerPhysicsComponent->OnComponentHit.AddUniqueDynamic(this, &UFireEngine::LandHelper);
 }
 
 
@@ -43,7 +46,7 @@ void UFireEngine::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	AdjustDirection();
+	//AdjustDirection();
 
 	OnAir = AirChecker();
 
@@ -67,6 +70,17 @@ bool UFireEngine::AirChecker()
 	return Hits.Num() == 0;
 }
 
+void UFireEngine::LandHelper(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	FVector LinearVelocity = OwnerPhysicsComponent->GetPhysicsLinearVelocity();
+	if (LinearVelocity.Length() > LandingVelocityThreshold) return;
+
+	OwnerPhysicsComponent->SetPhysicsLinearVelocity(LinearVelocity / LandingLinearVelocityDivider);
+	//OwnerPhysicsComponent->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
+	OwnerPhysicsComponent->SetPhysicsAngularVelocityInDegrees(OwnerPhysicsComponent->GetPhysicsAngularVelocityInDegrees() / LandingAngularVelocityDivider);
+	//OwnerPhysicsComponent->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+}
+
 void UFireEngine::Move(const FInputActionValue& Value)
 {
 	IsMoving = true;
@@ -74,7 +88,6 @@ void UFireEngine::Move(const FInputActionValue& Value)
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 	LookAxisVector.Normalize();
 
-	//FVector FinalDir = UKismetMathLibrary::TransformDirection(GetOwner()->GetTransform(), FVector(LookAxisVector.Y, LookAxisVector.X, 0));
 	FVector FinalDir = OwnerPhysicsComponent->GetForwardVector() * LookAxisVector.Y + OwnerPhysicsComponent->GetRightVector() * LookAxisVector.X;
 	FinalDir.Normalize();
 
@@ -160,12 +173,12 @@ void UFireEngine::StopLook(const FInputActionValue& Value)
 	IsLooking = false;
 }
 
-void UFireEngine::AskReposition(FVector RepositionTorqueForce, bool ForceReposition)
+void UFireEngine::AskReposition(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition)
 {
 	if (!ForceReposition)
 	{
 		//if (IsLooking || IsMoving) return;
-		if (IsLooking) return;
+		if (IsLooking || !RepositionTypes.Contains(RepositionType)) return;
 
 		if (RepositionTimer < RepositionTimerThreshold)
 		{
@@ -188,8 +201,12 @@ void UFireEngine::StopReposition()
 
 void UFireEngine::UpdateGravityForce(FVector OldGForce, FVector NewGForce)
 {
+	FVector OldForce = GravityForce;
+
 	GravityForce -= OldGForce;
 	GravityForce += NewGForce;
+
+	OnGravityUpdate.Broadcast(OldForce, GravityForce);
 }
 
 void UFireEngine::NotifyAtmoForce(bool Active)
@@ -208,17 +225,17 @@ void UFireEngine::NotifyAtmoForce(bool Active)
 
 	OnAtmoForce.Broadcast(Dir, Magnitude);
 }
-
-void UFireEngine::AdjustDirection()
-{
-	if (!(IsLooking || IsRepositioning))
-	{
-		FVector AngularVelocity = OwnerPhysicsComponent->GetPhysicsAngularVelocityInDegrees();
-		AngularVelocity = UKismetMathLibrary::VLerp(AngularVelocity, FVector::ZeroVector, GetWorld()->GetDeltaSeconds() * AngularVelocityDeterrent);
-
-		OwnerPhysicsComponent->SetPhysicsAngularVelocityInDegrees(AngularVelocity);
-
-		//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::White, FString::Printf(TEXT("Angular Velocity: %f - %f - %f"), AngularVelocity.X, AngularVelocity.Y, AngularVelocity.Z));
-	}
-}
+//
+//void UFireEngine::AdjustDirection()
+//{
+//	if (!(IsLooking || IsRepositioning))
+//	{
+//		FVector AngularVelocity = OwnerPhysicsComponent->GetPhysicsAngularVelocityInDegrees();
+//		AngularVelocity = UKismetMathLibrary::VLerp(AngularVelocity, FVector::ZeroVector, GetWorld()->GetDeltaSeconds() * AngularVelocityDeterrent);
+//
+//		//OwnerPhysicsComponent->SetPhysicsAngularVelocityInDegrees(AngularVelocity);
+//
+//		//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::White, FString::Printf(TEXT("Angular Velocity: %f - %f - %f"), AngularVelocity.X, AngularVelocity.Y, AngularVelocity.Z));
+//	}
+//}
 
