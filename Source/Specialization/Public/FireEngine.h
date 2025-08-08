@@ -11,6 +11,7 @@ class APlayerController;
 class ASpecializationCharacter;
 class UInputMappingContext;
 class UCurveFloat;
+class APlanet;
 struct FInputActionValue;
 
 UDELEGATE()
@@ -72,16 +73,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | Look")
 	float LookDrag = 10;
 	
-	/*UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | Reposition")
-	float AngularVelocityDeterrent = .2f;*/
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | Reposition")
 	float RepositionTimerThreshold = 1.5f;
 
 	float RepositionTimer = 0;
-
-	/*UFUNCTION()
-	void AdjustDirection();*/
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | General", meta = (MakeEditWidget))
 	FVector FeetPosition;
@@ -91,7 +86,7 @@ protected:
 
 	bool OnAir;
 
-	bool AirChecker();
+	bool AirChecker(APlanet*& PlanetSurface);
 
 	bool IsMoving = false;
 
@@ -109,6 +104,9 @@ protected:
 
 	UFUNCTION()
 	void LandHelper(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	UPROPERTY()
+	APlanet* LandingPlanet;
 
 public:
 	virtual void Move(const FInputActionValue& Value);
@@ -142,4 +140,7 @@ public:
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnGravityUpdate OnGravityUpdate;
+	
+	UFUNCTION(BlueprintCallable)
+	APlanet* GetPlanetSurface() const { return LandingPlanet; };
 };

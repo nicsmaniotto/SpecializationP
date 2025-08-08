@@ -7,7 +7,11 @@
 #include "Logging/LogMacros.h"
 #include "Possessable.h"
 #include "Interactable.h"
+#include "Enums.h"
 #include "SpecializationCharacter.generated.h"
+
+UDELEGATE()
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSpaceshipInteraction, bool, OnSpaceship);
 
 class UInputComponent;
 class USkeletalMeshComponent;
@@ -15,6 +19,7 @@ class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
 class ASpaceship;
+class UEnergyComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -27,7 +32,7 @@ class ASpecializationCharacter : public ACharacter, public IPossessable
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	USkeletalMeshComponent* Mesh1P;
-	
+
 	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* ConstraintMesh;*/
 
@@ -57,6 +62,9 @@ class ASpecializationCharacter : public ACharacter, public IPossessable
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	class UJetpack* Jetpack;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Energy, meta = (AllowPrivateAccess = "true"))
+	class UEnergyComponent* EnergyComponent;
 
 	/** Interact Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -105,6 +113,8 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	// End of APawn interface
 
+	void TogglePhysicality(bool Active);
+
 public:
 	/** Returns Mesh1P subobject **/
 	USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
@@ -148,6 +158,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetSpaceship();
 
+	UPROPERTY(BlueprintAssignable)
+	FOnSpaceshipInteraction OnSpaceshipInteraction;
+
 	// Jetpack
 protected:
 	void Throttle(const FInputActionValue& Value);
@@ -161,6 +174,12 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Interaction")
 	TScriptInterface<IInteractable> CurrentInteractable;
 
+	// Energy
+public:
+	UFUNCTION(BlueprintCallable)
+	UEnergyComponent* GetEnergyComponent() const { return EnergyComponent; }
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Energy")
+	TMap<EEnergyType, bool> OxygenConsumptionMap;
 };
 

@@ -4,7 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "FireEngine.h"
+#include "Enums.h"
 #include "Jetpack.generated.h"
+
+class UEnergyComponent;
 
 /**
  *
@@ -32,9 +35,27 @@ protected:
 
 	float PropulsionValue = 1;
 
+	bool bCanThrottle = true;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Energy")
+	UEnergyComponent* EnergyComponent;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Energy")
+	TMap<EEnergyType, bool> FuelConsumptionMap;
+
+	EEnergyType FuelConsumptionType;
 
 public:
+	UFUNCTION(BlueprintCallable)
+	void SetEnergyComponent(UEnergyComponent* _EnergyComponent);
+
 	void Throttle(const FInputActionValue& Value) override;
+	
+	void EndThrottle(const FInputActionValue& Value) override;
+	
+	void Reverse(const FInputActionValue& Value) override;
+	
+	void StopReverse(const FInputActionValue& Value) override;
 
 	void UpdateGravityForce(FVector OldGForce, FVector NewGForce) override;
 
@@ -42,4 +63,8 @@ public:
 
 	FVector GetGForce() { return GravityForce; }
 
+	bool HasPropulsion() const { return PropulsionValue > 0; }
+
+	UFUNCTION(BlueprintCallable)
+	float GetPropulsionValue() const { return PropulsionValue; }
 };

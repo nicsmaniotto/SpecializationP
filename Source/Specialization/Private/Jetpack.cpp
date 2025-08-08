@@ -2,6 +2,7 @@
 
 
 #include "Jetpack.h"
+#include "EnergyComponent.h"
 #include <Kismet/KismetMathLibrary.h>
 
 void UJetpack::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -9,19 +10,6 @@ void UJetpack::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	HandlePropSpeed(DeltaTime);
-
-	/*if (GravityForce != FVector::ZeroVector)
-	{
-		FVector GravityDir = -GravityForce;
-		GravityDir.Normalize();
-		FVector NewFor = FVector::VectorPlaneProject(GetOwner()->GetActorRightVector(), GravityDir).RotateAngleAxis(-90, GravityDir);
-
-		FRotator r = UKismetMathLibrary::FindLookAtRotation(GetOwner()->GetActorLocation(), GetOwner()->GetActorLocation() + NewFor);
-		r = UKismetMathLibrary::RLerp(GetOwner()->GetActorRotation(), r, 20 * DeltaTime, true);
-
-		DrawDebugLine(GetWorld(), GetOwner()->GetActorLocation(), GetOwner()->GetActorLocation() + NewFor * 200, FColor::Red, false, .1f);
-		GetOwner()->SetActorRotation(r.Quaternion(), ETeleportType::TeleportPhysics);
-	}*/
 }
 
 void UJetpack::HandlePropSpeed(float DeltaTime)
@@ -45,14 +33,58 @@ void UJetpack::HandlePropSpeed(float DeltaTime)
 	PropulsionValue = UKismetMathLibrary::FInterpTo_Constant(PropulsionValue, TargetValue, DeltaTime, PropSpeed);
 }
 
+void UJetpack::SetEnergyComponent(UEnergyComponent* _EnergyComponent)
+{
+	EnergyComponent = _EnergyComponent;
+}
+
 void UJetpack::Throttle(const FInputActionValue& Value)
 {
 	if (GravityForce != FVector::ZeroVector)
 	{
-		if (PropulsionValue <= 0) return;
+		if (!HasPropulsion())
+		{
+			EnergyComponent->StopConsumeEnergy(FuelConsumptionType);
+			return;
+		}
 	}
 
-	Super::Throttle(Value);
+	FuelConsumptionType = EnergyComponent->StartConsumeEnergy(FuelConsumptionMap);
+
+	if (FuelConsumptionType != EEnergyType::NONE)
+	{
+		Super::Throttle(Value);
+	}
+}
+
+void UJetpack::EndThrottle(const FInputActionValue& Value)
+{
+	if (FuelConsumptionType != EEnergyType::NONE)
+	{
+		EnergyComponent->StopConsumeEnergy(FuelConsumptionType);
+	}
+
+	Super::EndThrottle(Value);
+}
+
+void UJetpack::Reverse(const FInputActionValue& Value)
+{
+	FuelConsumptionType = EnergyComponent->StartConsumeEnergy(FuelConsumptionMap);
+
+	if (FuelConsumptionType != EEnergyType::NONE)
+	{
+		Super::Reverse(Value);
+	}
+}
+
+void UJetpack::StopReverse(const FInputActionValue& Value)
+{
+	if (FuelConsumptionType != EEnergyType::NONE)
+	{
+		EnergyComponent->StopConsumeEnergy(FuelConsumptionType);
+	}
+
+	Super::StopReverse(Value);
 }
 
 void UJetpack::UpdateGravityForce(FVector OldGForce, FVector NewGForce)

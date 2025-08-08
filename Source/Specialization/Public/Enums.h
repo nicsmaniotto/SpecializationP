@@ -20,3 +20,31 @@ enum class ERepositionType : uint8 {
     FORWARD = 0 UMETA(DisplayName = "FORWARD"),
     RIGHT = 1  UMETA(DisplayName = "RIGHT"),
 };
+
+UENUM(BlueprintType)
+enum class EEnergyType : uint8 {
+    NONE = 0 UMETA(DisplayName = "NONE"),
+    OXYGEN = 1 UMETA(DisplayName = "OXYGEN"),
+    FUEL = 2  UMETA(DisplayName = "FUEL"),
+};
+
+USTRUCT(BlueprintType, meta = (EditInlineNew, Blueprintable))
+struct FEnergyInfo
+{
+    GENERATED_USTRUCT_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    EEnergyType EnergyType;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float GrowthValue = 0;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float HardGrowthValue = .8f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float DecayValue = .2f;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float HardDecayValue = .8f;
+};

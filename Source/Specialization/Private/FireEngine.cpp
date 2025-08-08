@@ -5,6 +5,7 @@
 #include <Kismet/KismetMathLibrary.h>
 #include <InputActionValue.h>
 #include <Kismet/KismetSystemLibrary.h>
+#include <Planet.h>
 
 // Sets default values for this component's properties
 UFireEngine::UFireEngine()
@@ -48,7 +49,9 @@ void UFireEngine::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
 
 	//AdjustDirection();
 
-	OnAir = AirChecker();
+	OnAir = AirChecker(LandingPlanet);
+
+	OwnerPhysicsComponent->BodyInstance.bNotifyRigidBodyCollision = !OnAir;
 
 	if (!(OnAir || IsThrottling))
 	{
@@ -56,7 +59,7 @@ void UFireEngine::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
 	}
 }
 
-bool UFireEngine::AirChecker()
+bool UFireEngine::AirChecker(APlanet*& PlanetSurface)
 {
 	TArray<UPrimitiveComponent*> Hits;
 
@@ -66,6 +69,21 @@ bool UFireEngine::AirChecker()
 		{ EObjectTypeQuery::ObjectTypeQuery1 }, UStaticMeshComponent::StaticClass(), { GetOwner() }, Hits);
 
 	DrawDebugSphere(GetWorld(), Loc, AirCheckRadius, 32, FColor::Emerald, false, .01f);
+
+	UPrimitiveComponent** PlanetMesh = Hits.FindByPredicate([&](UPrimitiveComponent* P)->bool {
+		return !!Cast<APlanet>(P->GetOwner()); 
+		});
+
+	if (PlanetMesh)
+	{
+		UPrimitiveComponent* Aux = *PlanetMesh;
+		AActor* Aux1 = Aux->GetOwner();
+		PlanetSurface = Cast<APlanet>((*PlanetMesh)->GetOwner());
+	}
+	else
+	{
+		PlanetMesh = nullptr;
+	}
 
 	return Hits.Num() == 0;
 }
@@ -112,7 +130,12 @@ void UFireEngine::EndThrottle(const FInputActionValue& Value)
 
 void UFireEngine::Reverse(const FInputActionValue& Value)
 {
-	if (IsThrottling) return;
+	if (IsThrottling)
+	{
+		if (IsReversing) StopReverse(Value);
+
+		return;
+	}
 
 	IsReversing = true;
 	VerticalMovement(-1);

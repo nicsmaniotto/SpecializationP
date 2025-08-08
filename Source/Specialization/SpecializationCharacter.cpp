@@ -15,6 +15,8 @@
 #include <Kismet/KismetMathLibrary.h>
 #include <Jetpack.h>
 #include <GameFramework/CharacterMovementComponent.h>
+#include <EnergyComponent.h>
+#include <Planet.h>
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -49,6 +51,9 @@ ASpecializationCharacter::ASpecializationCharacter()
 
 	// Create fire engine
 	Jetpack = CreateDefaultSubobject<UJetpack>(TEXT("Jetpack"));
+
+	// Create energy component
+	EnergyComponent = CreateDefaultSubobject<UEnergyComponent>(TEXT("Energy Component"));
 }
 
 void ASpecializationCharacter::BeginPlay()
@@ -67,11 +72,15 @@ void ASpecializationCharacter::BeginPlay()
 
 	SetSpaceship();
 
+	Jetpack->SetEnergyComponent(EnergyComponent);
+
 }
 
 void ASpecializationCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	EnergyComponent->StartConsumeEnergy(OxygenConsumptionMap);
 
 	if (!GetController()) return;
 
@@ -120,6 +129,13 @@ void ASpecializationCharacter::SetupPlayerInputComponent(UInputComponent* Player
 	}
 }
 
+void ASpecializationCharacter::TogglePhysicality(bool Active)
+{
+	SetActorHiddenInGame(!Active);
+	GetCapsuleComponent()->SetSimulatePhysics(Active);
+	SetActorEnableCollision(Active);
+}
+
 
 void ASpecializationCharacter::Move(const FInputActionValue& Value)
 {
@@ -127,16 +143,22 @@ void ASpecializationCharacter::Move(const FInputActionValue& Value)
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	MovementVector.Normalize();
 
-	GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Move value: %f-%f "), MovementVector.X, MovementVector.Y));
-
 	if (bOnJetpack && Jetpack->GetOnAir())
 	{
 		Jetpack->Move(Value);
 		return;
 	}
 
-	if (Controller != nullptr)
+	if (Controller != nullptr && !Jetpack->GetOnAir())
 	{
+		// adjust velocity with planet if present
+		APlanet* PlanetSurface = Jetpack->GetPlanetSurface();
+		if (PlanetSurface)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Delta adjusted: %f-%f-%f "), PlanetSurface->GetDeltaVelocity().X, PlanetSurface->GetDeltaVelocity().Y, PlanetSurface->GetDeltaVelocity().Z));
+			GetCapsuleComponent()->AddForce(PlanetSurface->GetDeltaVelocity(), NAME_None, true);
+		}
+
 		// add movement 
 		GetCapsuleComponent()->AddImpulse(GetActorForwardVector() * MovementVector.Y * GetCharacterMovement()->MaxWalkSpeed, NAME_None, true);
 		GetCapsuleComponent()->AddImpulse(GetActorRightVector() * MovementVector.X * GetCharacterMovement()->MaxWalkSpeed, NAME_None, true);
@@ -164,7 +186,7 @@ void ASpecializationCharacter::Look(const FInputActionValue& Value)
 
 void ASpecializationCharacter::StartInteract(const FInputActionValue& Value)
 {
-	if(!CurrentInteractable || !IsValid(CurrentInteractable->_getUObject())) return;
+	if (!CurrentInteractable || !IsValid(CurrentInteractable->_getUObject())) return;
 
 	IInteractable::Execute_Interact(CurrentInteractable->_getUObject(), this);
 }
@@ -194,10 +216,9 @@ void ASpecializationCharacter::Possess_Implementation(APawn* Possesser)
 		}
 	}
 
-	SetActorHiddenInGame(false);
-	GetCapsuleComponent()->SetSimulatePhysics(true);
-	SetActorEnableCollision(true);
-	
+	TogglePhysicality(true);
+
+	OnSpaceshipInteraction.Broadcast(false);
 }
 
 void ASpecializationCharacter::UnPossess_Implementation()
@@ -210,9 +231,9 @@ void ASpecializationCharacter::UnPossess_Implementation()
 		}
 	}
 
-	SetActorHiddenInGame(true);
-	GetCapsuleComponent()->SetSimulatePhysics(false);
-	SetActorEnableCollision(false);
+	TogglePhysicality(false);
+
+	OnSpaceshipInteraction.Broadcast(true);
 }
 
 void ASpecializationCharacter::SetSpaceship()
@@ -245,5 +266,8 @@ void ASpecializationCharacter::Reverse(const FInputActionValue& Value)
 
 void ASpecializationCharacter::EndReverse(const FInputActionValue& Value)
 {
-	Jetpack->StopReverse(Value);
+	if (bOnJetpack && Jetpack->GetOnAir())
+	{
+		Jetpack->StopReverse(Value);
+	}
 }

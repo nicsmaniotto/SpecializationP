@@ -26,6 +26,18 @@ protected:
 	void BeginPlay() override;
 
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
+	TSubclassOf<UUserWidget> BaseHUDWidgetClass;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
+	TSubclassOf<UUserWidget> ShipHUDWidgetClass;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "HUD")
+	UUserWidget* BaseHUDWidget;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "HUD")
+	UUserWidget* ShipHUDWidget;
+	
 	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
 	UInteraction* InteractionWidget;
 
@@ -54,5 +66,10 @@ public:
 	bool AskToggleWidget(bool Active, EWidgetType Type, TSubclassOf<class UUserWidget> CustomWidget = nullptr);
 	
 	bool ExecuteTransition(FOnTransition _OnTransition, FOnTransitionEnd _OnTransitionEnd);
+
+// Player
+protected:
+	UFUNCTION()
+	void OnSpaceshipInteraction(bool OnSpaceship);
 	
 };

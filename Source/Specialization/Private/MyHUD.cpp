@@ -4,6 +4,7 @@
 #include "MyHUD.h"
 #include "Interaction.h"
 #include "TransitionWidget.h"
+#include "Specialization/SpecializationCharacter.h"
 
 void AMyHUD::BeginPlay()
 {
@@ -25,11 +26,39 @@ void AMyHUD::BeginPlay()
 		TransitionWidget->OnMidtimeTransition.AddUniqueDynamic(this, &AMyHUD::OnMidtimeTransition);
 		TransitionWidget->OnCompletedTransition.AddUniqueDynamic(this, &AMyHUD::OnCompletedTransition);
 	}
-	/*FTimerDelegate T;
-	T.BindLambda([&, this]()->void {
-		});
 
-	GetWorld()->GetTimerManager().SetTimerForNextTick(T);*/
+	// Creating HUD widgets
+	if (BaseHUDWidgetClass)
+	{
+		BaseHUDWidget = CreateWidget<UUserWidget>(GetWorld(), BaseHUDWidgetClass);
+		BaseHUDWidget->AddToViewport(1);
+	}
+
+	if (ShipHUDWidgetClass)
+	{
+		ShipHUDWidget = CreateWidget<UUserWidget>(GetWorld(), ShipHUDWidgetClass);
+		ShipHUDWidget->AddToViewport(1);
+	}
+
+	AskToggleWidget(true, EWidgetType::BASIC);
+
+	ASpecializationCharacter* Player = Cast<ASpecializationCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
+	if (Player)
+	{
+		Player->OnSpaceshipInteraction.AddUniqueDynamic(this, &AMyHUD::OnSpaceshipInteraction);
+	}
+}
+
+void AMyHUD::OnSpaceshipInteraction(bool OnSpaceship)
+{
+	if (OnSpaceship)
+	{
+		AskToggleWidget(true, EWidgetType::SHIP);
+	}
+	else
+	{
+		AskToggleWidget(true, EWidgetType::BASIC);
+	}
 }
 
 void AMyHUD::OnMidtimeTransition()
@@ -49,8 +78,30 @@ bool AMyHUD::AskToggleWidget(bool Active, EWidgetType Type, TSubclassOf<class UU
 	switch (Type)
 	{
 	case EWidgetType::BASIC:
-		break;
+	{
+		if (BaseHUDWidget)
+		{
+			BaseHUDWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+		}
+
+		if (ShipHUDWidget)
+		{
+			ShipHUDWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
+	break;
 	case EWidgetType::SHIP:
+	{
+		if (BaseHUDWidget)
+		{
+			BaseHUDWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
+		if (ShipHUDWidget)
+		{
+			ShipHUDWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+		}
+	}
 		break;
 	case EWidgetType::INTERACT:
 	{
