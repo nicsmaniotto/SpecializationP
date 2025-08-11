@@ -33,8 +33,10 @@ void UJetpack::HandlePropSpeed(float DeltaTime)
 	PropulsionValue = UKismetMathLibrary::FInterpTo_Constant(PropulsionValue, TargetValue, DeltaTime, PropSpeed);
 }
 
-void UJetpack::SetEnergyComponent(UEnergyComponent* _EnergyComponent)
+void UJetpack::SetDependencyComponent(UMarker* MarkerComponent, UEnergyComponent* _EnergyComponent)
 {
+	Super::SetDependencyComponent(MarkerComponent);
+
 	EnergyComponent = _EnergyComponent;
 }
 
@@ -65,6 +67,26 @@ void UJetpack::EndThrottle(const FInputActionValue& Value)
 	}
 
 	Super::EndThrottle(Value);
+}
+
+void UJetpack::Move(const FInputActionValue& Value)
+{
+	FuelConsumptionType = EnergyComponent->StartConsumeEnergy(FuelConsumptionMap);
+
+	if (FuelConsumptionType != EEnergyType::NONE)
+	{
+		Super::Move(Value);
+	}
+}
+
+void UJetpack::StopMove(const FInputActionValue& Value)
+{
+	if (FuelConsumptionType != EEnergyType::NONE)
+	{
+		EnergyComponent->StopConsumeEnergy(FuelConsumptionType);
+	}
+
+	Super::StopMove(Value);
 }
 
 void UJetpack::Reverse(const FInputActionValue& Value)

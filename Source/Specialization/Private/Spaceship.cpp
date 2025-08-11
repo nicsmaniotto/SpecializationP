@@ -13,6 +13,7 @@
 #include <FireEngine.h>
 #include <InteractableComponent.h>
 #include <MyHUD.h>
+#include <Marker.h>
 
 // Sets default values
 ASpaceship::ASpaceship()
@@ -38,12 +39,21 @@ ASpaceship::ASpaceship()
 	// CreateInteractionComponent
 	InteractComponent = CreateDefaultSubobject<UInteractableComponent>(TEXT("Interact Component"));
 	InteractComponent->SetupAttachment(Mesh);
+
+	// Create Marker component
+	MarkerComponent = CreateDefaultSubobject<UMarker>(TEXT("Marker Component"));
 }
 
 // Called when the game starts or when spawned
 void ASpaceship::BeginPlay()
 {
 	Super::BeginPlay();
+
+	FireEngine->SetDependencyComponent(MarkerComponent);
+
+	FireEngine->OnGravityUpdate.AddUniqueDynamic(this, &ASpaceship::OnGravityUpdate);
+
+	FireEngine->OnEndAutomaticPilot.BindDynamic(this, &ASpaceship::OnEndAutomaticPilot);
 }
 
 // Called every frame
@@ -66,11 +76,11 @@ void ASpaceship::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASpaceship::Move);
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &ASpaceship::StopMove);
 
-		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Ongoing, this, &ASpaceship::Throttle);
+		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Triggered, this, &ASpaceship::Throttle);
 		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Completed, this, &ASpaceship::EndThrottle);
 		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Canceled, this, &ASpaceship::EndThrottle);
 
-		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Ongoing, this, &ASpaceship::Reverse);
+		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Triggered, this, &ASpaceship::Reverse);
 		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Completed, this, &ASpaceship::EndReverse);
 		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Canceled, this, &ASpaceship::EndReverse);
 
@@ -78,6 +88,10 @@ void ASpaceship::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Started, this, &ASpaceship::StartLook);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASpaceship::Look);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Completed, this, &ASpaceship::StopLook);
+
+		// Marker
+		EnhancedInputComponent->BindAction(MarkerAction, ETriggerEvent::Started, this, &ASpaceship::LockObject);
+		EnhancedInputComponent->BindAction(AutomaticPilotAction, ETriggerEvent::Triggered, this, &ASpaceship::AutomaticPilot);
 	}
 
 }
@@ -163,6 +177,41 @@ void ASpaceship::OnUnPossessMidTransition()
 void ASpaceship::StopInteract(const FInputActionValue& Value)
 {
 
+}
+
+void ASpaceship::LockObject(const FInputActionValue& Value)
+{
+	if (!FireEngine->IsInAtmosphere()) MarkerComponent->ToggleMarkObject();
+}
+
+void ASpaceship::AutomaticPilot(const FInputActionValue& Value)
+{
+	if (FireEngine->IsInAtmosphere()) return;
+
+	if (FireEngine->GetIsAutomaticPilot())
+	{
+		FireEngine->ToggleAutomaticPilot(false);
+	}
+	else
+	{
+		if (MarkerComponent->ToggleTrajectory())
+		{
+			FireEngine->ToggleAutomaticPilot(true);
+		}
+	}
+}
+
+void ASpaceship::OnGravityUpdate(FVector OldGForce, FVector NewGForce)
+{
+	MarkerComponent->ToggleSelf(NewGForce.SquaredLength() == 0);
+}
+
+void ASpaceship::OnEndAutomaticPilot()
+{
+	if (MarkerComponent->ToggleTrajectory())
+	{
+		FireEngine->ToggleAutomaticPilot(false);
+	}
 }
 
 void ASpaceship::Move(const FInputActionValue& Value)

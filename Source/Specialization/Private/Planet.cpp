@@ -3,7 +3,9 @@
 
 #include "Planet.h"
 #include "GravityBound.h"
+#include "MarkingComponent.h"
 #include "Components/SplineComponent.h"
+#include <Kismet/KismetMathLibrary.h>
 
 // Sets default values
 APlanet::APlanet()
@@ -23,6 +25,13 @@ APlanet::APlanet()
 	Orbit = CreateDefaultSubobject<USplineComponent>("Orbit");
 	Orbit->SetupAttachment(Root);
 
+	MarkingComponent = CreateDefaultSubobject<UMarkingComponent>("Marking Component");
+	MarkingComponent->SetupAttachment(Mesh);
+}
+
+USceneComponent* APlanet::GetMarkedObject_Implementation()
+{
+	return Mesh;
 }
 
 // Called when the game starts or when spawned
@@ -76,7 +85,8 @@ void APlanet::Tick(float DeltaTime)
 
 FVector APlanet::GetDeltaVelocity() const
 {
-	return Mesh->GetComponentLocation() - LastLocation;
+	//return Mesh->GetComponentLocation() - LastLocation;
+	return (Mesh->GetComponentLocation() - LastLocation) / GetWorld()->GetDeltaSeconds() - Mesh->GetPhysicsAngularVelocityInRadians();
 }
 
 void APlanet::MeshRotation(float DeltaTime)

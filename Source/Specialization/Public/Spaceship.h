@@ -56,6 +56,17 @@ class SPECIALIZATION_API ASpaceship : public APawn, public IPossessable, public 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	class UInteractableComponent* InteractComponent;
 
+	/** Marker Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* MarkerAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UMarker* MarkerComponent;
+
+	/** Marker Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* AutomaticPilotAction;
+
 public:
 	// Sets default values for this pawn's properties
 	ASpaceship();
@@ -108,4 +119,16 @@ protected:
 	/** Called for looking input */
 	void StartInteract(const FInputActionValue& Value);
 	void StopInteract(const FInputActionValue& Value);
+
+	/*Automatic pilot*/
+
+	/** Called for mark/automatic pilot input */
+	void LockObject(const FInputActionValue& Value);
+	void AutomaticPilot(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void OnGravityUpdate(FVector OldGForce, FVector NewGForce);
+
+	UFUNCTION()
+	void OnEndAutomaticPilot();
 };

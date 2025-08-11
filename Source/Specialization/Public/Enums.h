@@ -48,3 +48,18 @@ struct FEnergyInfo
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float HardDecayValue = .8f;
 };
+
+UENUM(BlueprintType)
+enum class EIndicatorType : uint8 {
+    LEFT = 0 UMETA(DisplayName = "LEFT"),
+    TOP = 1 UMETA(DisplayName = "TOP"),
+    RIGHT = 2  UMETA(DisplayName = "RIGHT"),
+    BOTTOM = 3  UMETA(DisplayName = "BOTTOM"),
+};
+
+UENUM(BlueprintType)
+enum class ELockType : uint8 {
+    NONE = 0 UMETA(DisplayName = "NONE"),
+    LOCKED = 1 UMETA(DisplayName = "LOCKED"),
+    TRAJECTORY = 2  UMETA(DisplayName = "TRAJECTORY"),
+};

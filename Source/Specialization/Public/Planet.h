@@ -4,13 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Markable.h"
 #include "Planet.generated.h"
 
 class UGravityBound;
 class USplineComponent;
 
 UCLASS()
-class SPECIALIZATION_API APlanet : public AActor
+class SPECIALIZATION_API APlanet : public AActor, public IMarkable
 {
 	GENERATED_BODY()
 
@@ -20,6 +21,9 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, Category = "Planet | Structure", BlueprintReadOnly)
 	UStaticMeshComponent* Mesh;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Planet | Structure", BlueprintReadOnly)
+	class UMarkingComponent* MarkingComponent;
 	
 	UPROPERTY(VisibleAnywhere, Category = "Planet | Structure", BlueprintReadOnly)
 	UGravityBound* GravityBound;
@@ -46,6 +50,8 @@ protected:
 public:	
 	// Sets default values for this actor's properties
 	APlanet();
+
+	USceneComponent* GetMarkedObject_Implementation() override;
 
 protected:
 	// Called when the game starts or when spawned

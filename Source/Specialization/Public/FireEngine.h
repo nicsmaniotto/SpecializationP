@@ -12,6 +12,7 @@ class ASpecializationCharacter;
 class UInputMappingContext;
 class UCurveFloat;
 class APlanet;
+class UMarker;
 struct FInputActionValue;
 
 UDELEGATE()
@@ -20,13 +21,16 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAtmoForce, FVector, AtmoDir, flo
 UDELEGATE()
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGravityUpdate, FVector, OldGForce, FVector, NewGForce);
 
+UDELEGATE()
+DECLARE_DYNAMIC_DELEGATE(FOnEndAutomaticPilot);
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class SPECIALIZATION_API UFireEngine : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
 	// Sets default values for this component's properties
 	UFireEngine();
 
@@ -36,7 +40,7 @@ protected:
 
 	UPrimitiveComponent* OwnerPhysicsComponent;
 
-public:	
+public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -46,7 +50,7 @@ protected:
 	bool IsThrottling;
 	UPROPERTY(BlueprintReadWrite, Category = "Movement | Throttle")
 	bool IsReversing;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Throttle")
 	UCurveFloat* ThrottleCurve;
 
@@ -54,10 +58,10 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Movement | Look")
 	bool IsLooking;
-	
+
 	UPROPERTY(BlueprintReadWrite, Category = "Movement | Reposition")
 	bool IsRepositioning;
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement | Reposition")
 	TArray<ERepositionType> RepositionTypes;
 
@@ -72,7 +76,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | Look")
 	float LookDrag = 10;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | Reposition")
 	float RepositionTimerThreshold = 1.5f;
 
@@ -98,7 +102,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Landing")
 	float LandingAngularVelocityDivider = 50;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Landing")
 	float LandingLinearVelocityDivider = 100;
 
@@ -107,6 +111,10 @@ protected:
 
 	UPROPERTY()
 	APlanet* LandingPlanet;
+
+	/*Automatic pilot*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Automatic")
+	float AutomaticApproachAcceptance = 10;
 
 public:
 	virtual void Move(const FInputActionValue& Value);
@@ -118,6 +126,7 @@ public:
 	virtual void Reverse(const FInputActionValue& Value);
 	virtual void StopReverse(const FInputActionValue& Value);
 
+	virtual void HorizontalMovement(FVector2D LookAxisVector);
 	virtual void VerticalMovement(float GravityMultiplier);
 
 	virtual void StartLook(const FInputActionValue& Value);
@@ -129,18 +138,45 @@ public:
 
 	virtual void UpdateGravityForce(FVector OldGForce, FVector NewGForce);
 
+	virtual void ToggleAutomaticPilot(bool Active);
+
+	virtual void AutomaticPilotMovement();
+
+	bool IsAutomatic;
+
+	bool GetIsAutomaticPilot() const { return IsAutomatic; }
+
 	bool GetOnAir() const { return OnAir; }
 
+	// Functionality
+	virtual void SetDependencyComponent(UMarker* MarkerComponent);
+
 	// Atmosphere
+	UFUNCTION(BlueprintCallable)
+	FVector GetGForce() const { return GravityForce; }
+
+	UFUNCTION(BlueprintCallable)
+	bool IsInAtmosphere() const { return GravityForce.SquaredLength() > 0; }
+
 	UFUNCTION(BlueprintCallable)
 	void NotifyAtmoForce(bool Active);
 
 	UPROPERTY(BlueprintAssignable)
 	FOnAtmoForce OnAtmoForce;
-	
+
 	UPROPERTY(BlueprintAssignable)
 	FOnGravityUpdate OnGravityUpdate;
-	
+
 	UFUNCTION(BlueprintCallable)
 	APlanet* GetPlanetSurface() const { return LandingPlanet; };
+
+public:
+	// Automatic pilot
+	UPROPERTY()
+	FOnEndAutomaticPilot OnEndAutomaticPilot;
+
+	// Dependecies
+protected:
+	UPROPERTY(BlueprintReadOnly, Category = "Dependencies")
+	UMarker* Marker;
 };

@@ -5,6 +5,8 @@
 #include <Kismet/KismetMathLibrary.h>
 #include <InputActionValue.h>
 #include <Kismet/KismetSystemLibrary.h>
+#include <Marker.h>
+#include <MarkingComponent.h>
 #include <Planet.h>
 
 // Sets default values for this component's properties
@@ -57,6 +59,8 @@ void UFireEngine::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
 	{
 		ThrottleCurveEvaluation = 0;
 	}
+
+	if (IsAutomatic) AutomaticPilotMovement();
 }
 
 bool UFireEngine::AirChecker(APlanet*& PlanetSurface)
@@ -71,7 +75,7 @@ bool UFireEngine::AirChecker(APlanet*& PlanetSurface)
 	DrawDebugSphere(GetWorld(), Loc, AirCheckRadius, 32, FColor::Emerald, false, .01f);
 
 	UPrimitiveComponent** PlanetMesh = Hits.FindByPredicate([&](UPrimitiveComponent* P)->bool {
-		return !!Cast<APlanet>(P->GetOwner()); 
+		return !!Cast<APlanet>(P->GetOwner());
 		});
 
 	if (PlanetMesh)
@@ -101,15 +105,14 @@ void UFireEngine::LandHelper(UPrimitiveComponent* HitComponent, AActor* OtherAct
 
 void UFireEngine::Move(const FInputActionValue& Value)
 {
+	if (IsAutomatic) return;
+
 	IsMoving = true;
 
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 	LookAxisVector.Normalize();
 
-	FVector FinalDir = OwnerPhysicsComponent->GetForwardVector() * LookAxisVector.Y + OwnerPhysicsComponent->GetRightVector() * LookAxisVector.X;
-	FinalDir.Normalize();
-
-	OwnerPhysicsComponent->AddForce(FinalDir * FMath::Square(LateralMoveForce) * OwnerPhysicsComponent->GetMass());
+	HorizontalMovement(LookAxisVector);
 }
 
 void UFireEngine::StopMove(const FInputActionValue& Value)
@@ -119,8 +122,13 @@ void UFireEngine::StopMove(const FInputActionValue& Value)
 
 void UFireEngine::Throttle(const FInputActionValue& Value)
 {
+	if (IsAutomatic) return;
+
+	float AxisValue = Value.Get<float>();
+	//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Axis Val: %f"), AxisValue));
+
 	IsThrottling = true;
-	VerticalMovement(1);
+	VerticalMovement(AxisValue);
 }
 
 void UFireEngine::EndThrottle(const FInputActionValue& Value)
@@ -130,6 +138,8 @@ void UFireEngine::EndThrottle(const FInputActionValue& Value)
 
 void UFireEngine::Reverse(const FInputActionValue& Value)
 {
+	if (IsAutomatic) return;
+
 	if (IsThrottling)
 	{
 		if (IsReversing) StopReverse(Value);
@@ -137,13 +147,23 @@ void UFireEngine::Reverse(const FInputActionValue& Value)
 		return;
 	}
 
+	float AxisValue = Value.Get<float>();
+
 	IsReversing = true;
-	VerticalMovement(-1);
+	VerticalMovement(AxisValue);
 }
 
 void UFireEngine::StopReverse(const FInputActionValue& Value)
 {
 	IsReversing = false;
+}
+
+void UFireEngine::HorizontalMovement(FVector2D LookAxisVector)
+{
+	FVector FinalDir = OwnerPhysicsComponent->GetForwardVector() * LookAxisVector.Y + OwnerPhysicsComponent->GetRightVector() * LookAxisVector.X;
+	FinalDir.Normalize();
+
+	OwnerPhysicsComponent->AddForce(FinalDir * FMath::Square(LateralMoveForce) * OwnerPhysicsComponent->GetMass());
 }
 
 void UFireEngine::VerticalMovement(float GravityMultiplier)
@@ -187,8 +207,6 @@ void UFireEngine::Look(const FInputActionValue& Value)
 
 	OwnerPhysicsComponent->AddTorqueInDegrees(GetOwner()->GetActorRightVector() * LookAxisVector.Y * FMath::Square(TorqueForce), NAME_None, true);
 
-	GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Looking: %f - %f - %f"), FinalDir.X, FinalDir.Y, FinalDir.Z));
-
 }
 
 void UFireEngine::StopLook(const FInputActionValue& Value)
@@ -229,7 +247,71 @@ void UFireEngine::UpdateGravityForce(FVector OldGForce, FVector NewGForce)
 	GravityForce -= OldGForce;
 	GravityForce += NewGForce;
 
+	if (IsAutomatic && GravityForce.SquaredLength() > 0)
+	{
+		OnEndAutomaticPilot.ExecuteIfBound();
+	}
+
 	OnGravityUpdate.Broadcast(OldForce, GravityForce);
+}
+
+void UFireEngine::ToggleAutomaticPilot(bool Active)
+{
+	if (IsAutomatic == Active) return;
+	if (Active && IsInAtmosphere()) return;
+
+	IsAutomatic = Active;
+}
+
+void UFireEngine::AutomaticPilotMovement()
+{
+	UMarkingComponent* MC = Marker->GetMarkedObject();
+
+	if (!MC)
+	{
+		OnEndAutomaticPilot.ExecuteIfBound();
+		return;
+	}
+
+	FVector ApproachForces = MC->GetApproachForces();
+	float FinalDist = ApproachForces.SquaredLength();
+
+	if (ApproachForces.SquaredLength() < FMath::Square(AutomaticApproachAcceptance))
+	{
+		OnEndAutomaticPilot.ExecuteIfBound();
+		return;
+	}
+
+	FVector PhysicsVelocity = OwnerPhysicsComponent->GetPhysicsLinearVelocity();
+
+	FVector RelativeDir = UKismetMathLibrary::InverseTransformDirection(OwnerPhysicsComponent->GetComponentTransform(), ApproachForces);
+	RelativeDir.Normalize();
+
+	FVector2D XYForce = FVector2D(RelativeDir.Y, RelativeDir.X);
+
+	float DistToStop = PhysicsVelocity.SquaredLength() / (2 * (ApproachForces.GetSafeNormal() * MoveForce).Length());
+
+	if (FVector::DotProduct(PhysicsVelocity, ApproachForces) > 0 && DistToStop / 2.5f >= ApproachForces.Length())
+	{
+		XYForce *= -1;
+		RelativeDir.Z *= -1;
+	}
+
+	if (XYForce.SquaredLength() > 0)
+	{
+		HorizontalMovement(XYForce.GetSafeNormal());
+	}
+
+	if (ApproachForces.Z > 0)
+	{
+		VerticalMovement(RelativeDir.Z);
+	}
+
+}
+
+void UFireEngine::SetDependencyComponent(UMarker* MarkerComponent)
+{
+	Marker = MarkerComponent;
 }
 
 void UFireEngine::NotifyAtmoForce(bool Active)

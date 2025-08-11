@@ -17,6 +17,7 @@
 #include <GameFramework/CharacterMovementComponent.h>
 #include <EnergyComponent.h>
 #include <Planet.h>
+#include <Marker.h>
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -54,6 +55,9 @@ ASpecializationCharacter::ASpecializationCharacter()
 
 	// Create energy component
 	EnergyComponent = CreateDefaultSubobject<UEnergyComponent>(TEXT("Energy Component"));
+
+	// Create Marker component
+	MarkerComponent = CreateDefaultSubobject<UMarker>(TEXT("Marker Component"));
 }
 
 void ASpecializationCharacter::BeginPlay()
@@ -72,8 +76,11 @@ void ASpecializationCharacter::BeginPlay()
 
 	SetSpaceship();
 
-	Jetpack->SetEnergyComponent(EnergyComponent);
+	Jetpack->SetDependencyComponent(MarkerComponent, EnergyComponent);
 
+	Jetpack->OnGravityUpdate.AddUniqueDynamic(this, &ASpecializationCharacter::OnGravityUpdate);
+
+	Jetpack->OnEndAutomaticPilot.BindDynamic(this, &ASpecializationCharacter::OnEndAutomaticPilot);
 }
 
 void ASpecializationCharacter::Tick(float DeltaSeconds)
@@ -91,6 +98,27 @@ void ASpecializationCharacter::Tick(float DeltaSeconds)
 	FirstPersonCameraComponent->SetRelativeRotation(r);
 
 	GetCharacterMovement()->SetActive(false);
+
+	// adjust velocity with planet if present
+	APlanet* PlanetSurface = Jetpack->GetPlanetSurface();
+	if (PlanetSurface)
+	{
+		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + PlanetSurface->GetDeltaVelocity(), FColor::Blue, false, .1f);
+		GetCapsuleComponent()->AddForce(PlanetSurface->GetDeltaVelocity(), NAME_None, true);
+	}
+}
+
+void ASpecializationCharacter::OnGravityUpdate(FVector OldGForce, FVector NewGForce)
+{
+	MarkerComponent->ToggleSelf(NewGForce.SquaredLength() == 0);
+}
+
+void ASpecializationCharacter::OnEndAutomaticPilot()
+{
+	if (MarkerComponent->ToggleTrajectory())
+	{
+		Jetpack->ToggleAutomaticPilot(false);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -109,19 +137,26 @@ void ASpecializationCharacter::SetupPlayerInputComponent(UInputComponent* Player
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &ASpecializationCharacter::StopMove);
 
 		// Jetpack
-		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Ongoing, this, &ASpecializationCharacter::Throttle);
+		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Triggered, this, &ASpecializationCharacter::Throttle);
 		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Completed, this, &ASpecializationCharacter::EndThrottle);
 		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Canceled, this, &ASpecializationCharacter::EndThrottle);
 
-		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Ongoing, this, &ASpecializationCharacter::Reverse);
+		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Triggered, this, &ASpecializationCharacter::Reverse);
 		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Completed, this, &ASpecializationCharacter::EndReverse);
 		EnhancedInputComponent->BindAction(ReverseAction, ETriggerEvent::Canceled, this, &ASpecializationCharacter::EndReverse);
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASpecializationCharacter::Look);
 
+		// Interact
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ASpecializationCharacter::StartInteract);
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Completed, this, &ASpecializationCharacter::StopInteract);
+
+		// Marker
+		EnhancedInputComponent->BindAction(MarkerAction, ETriggerEvent::Started, this, &ASpecializationCharacter::LockObject);
+
+		// Automatic pilot
+		EnhancedInputComponent->BindAction(AutomaticPilotAction, ETriggerEvent::Started, this, &ASpecializationCharacter::AutomaticPilot);
 	}
 	else
 	{
@@ -152,12 +187,14 @@ void ASpecializationCharacter::Move(const FInputActionValue& Value)
 	if (Controller != nullptr && !Jetpack->GetOnAir())
 	{
 		// adjust velocity with planet if present
-		APlanet* PlanetSurface = Jetpack->GetPlanetSurface();
-		if (PlanetSurface)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Delta adjusted: %f-%f-%f "), PlanetSurface->GetDeltaVelocity().X, PlanetSurface->GetDeltaVelocity().Y, PlanetSurface->GetDeltaVelocity().Z));
-			GetCapsuleComponent()->AddForce(PlanetSurface->GetDeltaVelocity(), NAME_None, true);
-		}
+		//APlanet* PlanetSurface = Jetpack->GetPlanetSurface();
+		//if (PlanetSurface)
+		//{
+		//	//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Delta adjusted: %f-%f-%f "), PlanetSurface->GetDeltaVelocity().X, PlanetSurface->GetDeltaVelocity().Y, PlanetSurface->GetDeltaVelocity().Z));
+		//	/*GetCapsuleComponent()->AddForce(PlanetSurface->GetDeltaVelocity(), NAME_None, true);*/
+		//	//GetCapsuleComponent()->AddForce(IMarkable::Execute_GetMarkedObject(PlanetSurface)->GetComponentVelocity(), NAME_None, true);
+		//	//GetCapsuleComponent()->SetAllPhysicsLinearVelocity(PlanetSurface->GetDeltaVelocity() / GetWorld()->GetDeltaSeconds(), true);
+		//}
 
 		// add movement 
 		GetCapsuleComponent()->AddImpulse(GetActorForwardVector() * MovementVector.Y * GetCharacterMovement()->MaxWalkSpeed, NAME_None, true);
@@ -193,6 +230,29 @@ void ASpecializationCharacter::StartInteract(const FInputActionValue& Value)
 
 void ASpecializationCharacter::StopInteract(const FInputActionValue& Value)
 {
+}
+
+void ASpecializationCharacter::LockObject(const FInputActionValue& Value)
+{
+	if (!Jetpack->IsInAtmosphere()) MarkerComponent->ToggleMarkObject();
+}
+
+void ASpecializationCharacter::AutomaticPilot(const FInputActionValue& Value)
+{
+	if (Jetpack->IsInAtmosphere()) return;
+
+	if (Jetpack->GetIsAutomaticPilot())
+	{
+		Jetpack->ToggleAutomaticPilot(false);
+	}
+	else
+	{
+		if (MarkerComponent->ToggleTrajectory())
+		{
+			Jetpack->ToggleAutomaticPilot(true);
+		}
+	}
+
 }
 
 void ASpecializationCharacter::SetHasRifle(bool bNewHasRifle)

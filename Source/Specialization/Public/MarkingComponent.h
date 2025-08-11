@@ -5,17 +5,21 @@
 #include "CoreMinimal.h"
 #include "Components/WidgetComponent.h"
 #include "Markable.h"
+#include "Enums.h"
 #include "MarkingComponent.generated.h"
 
 class UMarker;
+class UMarkerWidget;
 
 /**
  *
  */
-UCLASS()
+UCLASS(Blueprintable, ClassGroup = "UserInterface", hidecategories = (Object, Activation, "Components|Activation", Sockets, Base, Lighting, LOD, Mesh), editinlinenew, meta = (BlueprintSpawnableComponent))
 class SPECIALIZATION_API UMarkingComponent : public UWidgetComponent
 {
 	GENERATED_BODY()
+
+	UMarkingComponent();
 
 protected:
 	void BeginPlay() override;
@@ -27,7 +31,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	TScriptInterface<IMarkable> MarkableObj;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Marker")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marker")
 	float ApproachDist = 100000;
 
 	UFUNCTION(BlueprintCallable)
@@ -39,12 +43,21 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Marker")
 	UMarker* MarkerObj;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Marker")
+	UMarkerWidget* MarkerWidget;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Marker")
+	ELockType CurrentLockType;
+
 public:
 	UFUNCTION(BlueprintCallable)
 	virtual void ToggleVisualLock(bool Active);
 
 	UFUNCTION(BlueprintCallable)
-	virtual void ToggleLock(bool Active, UMarker* Marker);
+	virtual void ToggleLock(UMarker* Marker);
+	
+	UFUNCTION(BlueprintCallable)
+	virtual bool ToggleTrajectory();
 
 	UFUNCTION(BlueprintCallable)
 	FVector GetApproachForces() const { return ApproachForces; };

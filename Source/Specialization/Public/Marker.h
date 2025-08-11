@@ -6,7 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "Marker.generated.h"
 
-class UWidgetComponent;
+class UMarkingComponent;
+class APlayerController;
 
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -32,10 +33,13 @@ protected:
 	TEnumAsByte<ETraceTypeQuery> CheckType;
 
 	UFUNCTION(BlueprintCallable)
-	UWidgetComponent* CheckMarker();
+	APlayerController* CheckController();
+	
+	UFUNCTION(BlueprintCallable)
+	UMarkingComponent* CheckMarker(APlayerController* PlayerController);
 
 	UPROPERTY(BlueprintReadOnly, Category = "Marker")
-	UWidgetComponent* MarkedObject;
+	UMarkingComponent* MarkedObject;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Marker")
 	bool IsMarking;
@@ -45,14 +49,17 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION(BlueprintCallable)
-	void ToggleActivity(bool Active);
-
-	UFUNCTION(BlueprintCallable)
-	UWidgetComponent* GetMarkedObject() const { return MarkedObject; }
+	UMarkingComponent* GetMarkedObject() const { return MarkedObject; }
 	
 	UFUNCTION(BlueprintCallable)
 	void ToggleMarkObject();
+	
+	UFUNCTION(BlueprintCallable)
+	bool ToggleTrajectory();
 
 	UFUNCTION(BlueprintCallable)
 	FTransform GetSelfTransform() const;
+
+	UFUNCTION(BlueprintCallable)
+	void ToggleSelf(bool Active);
 };

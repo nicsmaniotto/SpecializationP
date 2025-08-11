@@ -46,12 +46,15 @@ protected:
 	EEnergyType FuelConsumptionType;
 
 public:
-	UFUNCTION(BlueprintCallable)
-	void SetEnergyComponent(UEnergyComponent* _EnergyComponent);
+	void SetDependencyComponent(UMarker* MarkerComponent, UEnergyComponent* _EnergyComponent);
 
 	void Throttle(const FInputActionValue& Value) override;
 	
 	void EndThrottle(const FInputActionValue& Value) override;
+	
+	void Move(const FInputActionValue& Value) override;
+	
+	void StopMove(const FInputActionValue& Value) override;
 	
 	void Reverse(const FInputActionValue& Value) override;
 	
@@ -60,8 +63,6 @@ public:
 	void UpdateGravityForce(FVector OldGForce, FVector NewGForce) override;
 
 	virtual void AskReposition(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition = false) override;
-
-	FVector GetGForce() { return GravityForce; }
 
 	bool HasPropulsion() const { return PropulsionValue > 0; }
 

@@ -69,6 +69,17 @@ class ASpecializationCharacter : public ACharacter, public IPossessable
 	/** Interact Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* InteractAction;
+	
+	/** Marker Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* MarkerAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UMarker* MarkerComponent;
+
+	/** Marker Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* AutomaticPilotAction;
 
 public:
 	ASpecializationCharacter();
@@ -107,6 +118,10 @@ protected:
 	/** Called for looking input */
 	void StartInteract(const FInputActionValue& Value);
 	void StopInteract(const FInputActionValue& Value);
+
+	/** Called for mark/automatic pilot input */
+	void LockObject(const FInputActionValue& Value);
+	void AutomaticPilot(const FInputActionValue& Value);
 
 protected:
 	// APawn interface
@@ -168,6 +183,12 @@ protected:
 
 	void Reverse(const FInputActionValue& Value);
 	void EndReverse(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void OnGravityUpdate(FVector OldGForce, FVector NewGForce);
+
+	UFUNCTION()
+	void OnEndAutomaticPilot();
 
 	// Interaction
 public:

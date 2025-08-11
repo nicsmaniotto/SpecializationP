@@ -28,18 +28,6 @@ void UGravityBound::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AAc
 void UGravityBound::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	UnenlistComponent(OtherComp);
-
-	/*if (!OtherActor->GetClass()->ImplementsInterface(UPossessable::StaticClass())) return;
-
-	AActor* Possesser = IPossessable::Execute_GetPossesser(OtherActor);
-
-	if (!Possesser) return;
-
-	UPrimitiveComponent* PrimitiveComponent = Possesser->GetComponentByClass<UPrimitiveComponent>();
-
-	if (!PrimitiveComponent) return;
-
-	UnenlistComponent(PrimitiveComponent, true);*/
 }
 
 void UGravityBound::EnlistComponent(UPrimitiveComponent* OtherComp)
