@@ -26,7 +26,7 @@ APlanet::APlanet()
 	Orbit->SetupAttachment(Root);
 
 	MarkingComponent = CreateDefaultSubobject<UMarkingComponent>("Marking Component");
-	MarkingComponent->SetupAttachment(Mesh);
+	MarkingComponent->SetupAttachment(GravityBound);
 }
 
 USceneComponent* APlanet::GetMarkedObject_Implementation()

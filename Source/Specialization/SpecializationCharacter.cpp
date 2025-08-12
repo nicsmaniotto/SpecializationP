@@ -115,7 +115,7 @@ void ASpecializationCharacter::OnGravityUpdate(FVector OldGForce, FVector NewGFo
 
 void ASpecializationCharacter::OnEndAutomaticPilot()
 {
-	if (MarkerComponent->ToggleTrajectory())
+	if (!MarkerComponent->ToggleTrajectory())
 	{
 		Jetpack->ToggleAutomaticPilot(false);
 	}

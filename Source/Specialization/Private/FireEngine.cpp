@@ -107,12 +107,13 @@ void UFireEngine::Move(const FInputActionValue& Value)
 {
 	if (IsAutomatic) return;
 
-	IsMoving = true;
-
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 	LookAxisVector.Normalize();
 
-	HorizontalMovement(LookAxisVector);
+	if (HorizontalMovement(LookAxisVector))
+	{
+		IsMoving = true;
+	}
 }
 
 void UFireEngine::StopMove(const FInputActionValue& Value)
@@ -127,8 +128,10 @@ void UFireEngine::Throttle(const FInputActionValue& Value)
 	float AxisValue = Value.Get<float>();
 	//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Axis Val: %f"), AxisValue));
 
-	IsThrottling = true;
-	VerticalMovement(AxisValue);
+	if (VerticalMovement(AxisValue))
+	{
+		IsThrottling = true;
+	}
 }
 
 void UFireEngine::EndThrottle(const FInputActionValue& Value)
@@ -149,8 +152,10 @@ void UFireEngine::Reverse(const FInputActionValue& Value)
 
 	float AxisValue = Value.Get<float>();
 
-	IsReversing = true;
-	VerticalMovement(AxisValue);
+	if (VerticalMovement(AxisValue))
+	{
+		IsReversing = true;
+	}
 }
 
 void UFireEngine::StopReverse(const FInputActionValue& Value)
@@ -158,15 +163,16 @@ void UFireEngine::StopReverse(const FInputActionValue& Value)
 	IsReversing = false;
 }
 
-void UFireEngine::HorizontalMovement(FVector2D LookAxisVector)
+bool UFireEngine::HorizontalMovement(FVector2D LookAxisVector)
 {
 	FVector FinalDir = OwnerPhysicsComponent->GetForwardVector() * LookAxisVector.Y + OwnerPhysicsComponent->GetRightVector() * LookAxisVector.X;
 	FinalDir.Normalize();
 
 	OwnerPhysicsComponent->AddForce(FinalDir * FMath::Square(LateralMoveForce) * OwnerPhysicsComponent->GetMass());
+	return true;
 }
 
-void UFireEngine::VerticalMovement(float GravityMultiplier)
+bool UFireEngine::VerticalMovement(float GravityMultiplier)
 {
 	FVector Throttle = OwnerPhysicsComponent->GetUpVector();
 	//Throttle.Normalize();
@@ -182,6 +188,8 @@ void UFireEngine::VerticalMovement(float GravityMultiplier)
 	}
 
 	OwnerPhysicsComponent->AddForce(Throttle * FMath::Square(ThrottleForce) * OwnerPhysicsComponent->GetMass());
+
+	return true;
 
 	//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Throttle: %f - %f - %f"), Throttle.X, Throttle.Y, Throttle.Z));
 }
@@ -267,7 +275,7 @@ void UFireEngine::AutomaticPilotMovement()
 {
 	UMarkingComponent* MC = Marker->GetMarkedObject();
 
-	if (!MC)
+	if (!Marker->GetIsMarking() || !MC)
 	{
 		OnEndAutomaticPilot.ExecuteIfBound();
 		return;
@@ -291,22 +299,28 @@ void UFireEngine::AutomaticPilotMovement()
 
 	float DistToStop = PhysicsVelocity.SquaredLength() / (2 * (ApproachForces.GetSafeNormal() * MoveForce).Length());
 
-	if (FVector::DotProduct(PhysicsVelocity, ApproachForces) > 0 && DistToStop / 2.5f >= ApproachForces.Length())
+	if (FVector::DotProduct(PhysicsVelocity, ApproachForces) > 0 && DistToStop / 4 >= ApproachForces.Length())
 	{
 		XYForce *= -1;
 		RelativeDir.Z *= -1;
 	}
 
+	bool MovFlag = true;
+
 	if (XYForce.SquaredLength() > 0)
 	{
-		HorizontalMovement(XYForce.GetSafeNormal());
+		MovFlag = MovFlag && HorizontalMovement(XYForce.GetSafeNormal());
 	}
 
-	if (ApproachForces.Z > 0)
+	if (MovFlag && ApproachForces.Z > 0)
 	{
-		VerticalMovement(RelativeDir.Z);
+		MovFlag = MovFlag && VerticalMovement(RelativeDir.Z);
 	}
 
+	if (!MovFlag)
+	{
+		OnEndAutomaticPilot.ExecuteIfBound();
+	}
 }
 
 void UFireEngine::SetDependencyComponent(UMarker* MarkerComponent)

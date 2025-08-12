@@ -48,11 +48,11 @@ protected:
 public:
 	void SetDependencyComponent(UMarker* MarkerComponent, UEnergyComponent* _EnergyComponent);
 
-	void Throttle(const FInputActionValue& Value) override;
+	bool HorizontalMovement(FVector2D LookAxisVector) override;
 	
 	void EndThrottle(const FInputActionValue& Value) override;
 	
-	void Move(const FInputActionValue& Value) override;
+	bool VerticalMovement(float GravityMultiplier) override;
 	
 	void StopMove(const FInputActionValue& Value) override;
 	

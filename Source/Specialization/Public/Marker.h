@@ -52,6 +52,9 @@ public:
 	UMarkingComponent* GetMarkedObject() const { return MarkedObject; }
 	
 	UFUNCTION(BlueprintCallable)
+	bool GetIsMarking() const { return IsMarking; }
+	
+	UFUNCTION(BlueprintCallable)
 	void ToggleMarkObject();
 	
 	UFUNCTION(BlueprintCallable)

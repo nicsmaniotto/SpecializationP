@@ -70,6 +70,8 @@ FVector UMarkingComponent::CalcApproachForces()
 
 void UMarkingComponent::ToggleVisualLock(bool Active)
 {
+	if(!Active) ToggleLock(nullptr);
+
 	SetVisibility(Active);
 }
 
@@ -104,5 +106,5 @@ bool UMarkingComponent::ToggleTrajectory()
 
 	MarkerWidget->ChangeBehavior(CurrentLockType);
 
-	return true;
+	return CurrentLockType == ELockType::TRAJECTORY;
 }

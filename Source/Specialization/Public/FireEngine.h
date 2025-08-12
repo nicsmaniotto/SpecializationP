@@ -126,8 +126,8 @@ public:
 	virtual void Reverse(const FInputActionValue& Value);
 	virtual void StopReverse(const FInputActionValue& Value);
 
-	virtual void HorizontalMovement(FVector2D LookAxisVector);
-	virtual void VerticalMovement(float GravityMultiplier);
+	virtual bool HorizontalMovement(FVector2D LookAxisVector);
+	virtual bool VerticalMovement(float GravityMultiplier);
 
 	virtual void StartLook(const FInputActionValue& Value);
 	virtual void Look(const FInputActionValue& Value);

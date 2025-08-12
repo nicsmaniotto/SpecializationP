@@ -40,14 +40,14 @@ void UJetpack::SetDependencyComponent(UMarker* MarkerComponent, UEnergyComponent
 	EnergyComponent = _EnergyComponent;
 }
 
-void UJetpack::Throttle(const FInputActionValue& Value)
+bool UJetpack::HorizontalMovement(FVector2D LookAxisVector)
 {
 	if (GravityForce != FVector::ZeroVector)
 	{
 		if (!HasPropulsion())
 		{
 			EnergyComponent->StopConsumeEnergy(FuelConsumptionType);
-			return;
+			return false;
 		}
 	}
 
@@ -55,8 +55,10 @@ void UJetpack::Throttle(const FInputActionValue& Value)
 
 	if (FuelConsumptionType != EEnergyType::NONE)
 	{
-		Super::Throttle(Value);
+		return Super::HorizontalMovement(LookAxisVector);
 	}
+
+	return false;
 }
 
 void UJetpack::EndThrottle(const FInputActionValue& Value)
@@ -69,14 +71,16 @@ void UJetpack::EndThrottle(const FInputActionValue& Value)
 	Super::EndThrottle(Value);
 }
 
-void UJetpack::Move(const FInputActionValue& Value)
+bool UJetpack::VerticalMovement(float GravityMultiplier)
 {
 	FuelConsumptionType = EnergyComponent->StartConsumeEnergy(FuelConsumptionMap);
 
 	if (FuelConsumptionType != EEnergyType::NONE)
 	{
-		Super::Move(Value);
+		return Super::VerticalMovement(GravityMultiplier);
 	}
+
+	return false;
 }
 
 void UJetpack::StopMove(const FInputActionValue& Value)

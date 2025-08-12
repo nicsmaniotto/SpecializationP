@@ -208,7 +208,7 @@ void ASpaceship::OnGravityUpdate(FVector OldGForce, FVector NewGForce)
 
 void ASpaceship::OnEndAutomaticPilot()
 {
-	if (MarkerComponent->ToggleTrajectory())
+	if (!MarkerComponent->ToggleTrajectory())
 	{
 		FireEngine->ToggleAutomaticPilot(false);
 	}
