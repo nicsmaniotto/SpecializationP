@@ -41,6 +41,9 @@ void UFireEngine::BeginPlay()
 	}
 
 	OwnerPhysicsComponent->OnComponentHit.AddUniqueDynamic(this, &UFireEngine::LandHelper);
+
+	OwnerPhysicsComponent->OnComponentBeginOverlap.AddUniqueDynamic(this, &UFireEngine::OnBeginOverlap);
+	OwnerPhysicsComponent->OnComponentEndOverlap.AddUniqueDynamic(this, &UFireEngine::OnEndOverlap);
 }
 
 
@@ -51,9 +54,10 @@ void UFireEngine::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
 
 	//AdjustDirection();
 
-	OnAir = AirChecker(LandingPlanet);
+	OnAir = AirChecker();
 
-	OwnerPhysicsComponent->BodyInstance.bNotifyRigidBodyCollision = !OnAir;
+	//OwnerPhysicsComponent->BodyInstance.bNotifyRigidBodyCollision = OnAir;
+	OwnerPhysicsComponent->SetNotifyRigidBodyCollision(OnAir);
 
 	if (!(OnAir || IsThrottling))
 	{
@@ -63,7 +67,7 @@ void UFireEngine::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
 	if (IsAutomatic) AutomaticPilotMovement();
 }
 
-bool UFireEngine::AirChecker(APlanet*& PlanetSurface)
+bool UFireEngine::AirChecker()
 {
 	TArray<UPrimitiveComponent*> Hits;
 
@@ -74,7 +78,7 @@ bool UFireEngine::AirChecker(APlanet*& PlanetSurface)
 
 	DrawDebugSphere(GetWorld(), Loc, AirCheckRadius, 32, FColor::Emerald, false, .01f);
 
-	UPrimitiveComponent** PlanetMesh = Hits.FindByPredicate([&](UPrimitiveComponent* P)->bool {
+	/*UPrimitiveComponent** PlanetMesh = Hits.FindByPredicate([&](UPrimitiveComponent* P)->bool {
 		return !!Cast<APlanet>(P->GetOwner());
 		});
 
@@ -86,8 +90,8 @@ bool UFireEngine::AirChecker(APlanet*& PlanetSurface)
 	}
 	else
 	{
-		PlanetMesh = nullptr;
-	}
+		PlanetSurface = nullptr;
+	}*/
 
 	return Hits.Num() == 0;
 }
@@ -97,10 +101,28 @@ void UFireEngine::LandHelper(UPrimitiveComponent* HitComponent, AActor* OtherAct
 	FVector LinearVelocity = OwnerPhysicsComponent->GetPhysicsLinearVelocity();
 	if (LinearVelocity.Length() > LandingVelocityThreshold) return;
 
-	OwnerPhysicsComponent->SetPhysicsLinearVelocity(LinearVelocity / LandingLinearVelocityDivider);
+	//OwnerPhysicsComponent->SetPhysicsLinearVelocity(LinearVelocity / LandingLinearVelocityDivider);
 	//OwnerPhysicsComponent->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
-	OwnerPhysicsComponent->SetPhysicsAngularVelocityInDegrees(OwnerPhysicsComponent->GetPhysicsAngularVelocityInDegrees() / LandingAngularVelocityDivider);
-	//OwnerPhysicsComponent->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+	//OwnerPhysicsComponent->SetPhysicsAngularVelocityInDegrees(OwnerPhysicsComponent->GetPhysicsAngularVelocityInDegrees() / LandingAngularVelocityDivider);
+	OwnerPhysicsComponent->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+}
+
+void UFireEngine::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	APlanet* Planet = Cast<APlanet>(OtherActor);
+	if (Planet)
+	{
+		LandingPlanet = Planet;
+	}
+}
+
+void UFireEngine::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	APlanet* Planet = Cast<APlanet>(OtherActor);
+	if (Planet)
+	{
+		LandingPlanet = nullptr;
+	}
 }
 
 void UFireEngine::Move(const FInputActionValue& Value)
@@ -222,7 +244,7 @@ void UFireEngine::StopLook(const FInputActionValue& Value)
 	IsLooking = false;
 }
 
-void UFireEngine::AskReposition(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition)
+void UFireEngine::AskReposition_Implementation(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition)
 {
 	if (!ForceReposition)
 	{
@@ -238,9 +260,14 @@ void UFireEngine::AskReposition(ERepositionType RepositionType, FVector Repositi
 
 	IsRepositioning = true;
 
-	OwnerPhysicsComponent->AddTorqueInDegrees(RepositionTorqueForce, NAME_None, true);
+	UPrimitiveComponent* PC = Cast<UPrimitiveComponent>(IRepositionable::Execute_GetRepositionableComponent(this));
+
+	if (!PC) return;
+
+	PC->AddTorqueInDegrees(RepositionTorqueForce, NAME_None, true);
 
 	GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Repositioning")));
+
 }
 
 void UFireEngine::StopReposition()
@@ -269,6 +296,11 @@ void UFireEngine::ToggleAutomaticPilot(bool Active)
 	if (Active && IsInAtmosphere()) return;
 
 	IsAutomatic = Active;
+
+	if (!Active)
+	{
+		OnEndAutomaticPilot.ExecuteIfBound();
+	}
 }
 
 void UFireEngine::AutomaticPilotMovement()

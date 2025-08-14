@@ -53,6 +53,8 @@ public:
 
 	USceneComponent* GetMarkedObject_Implementation() override;
 
+	UStaticMeshComponent* GetMesh() const { return Mesh; }
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -67,5 +69,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	FVector GetDeltaVelocity() const;
+
+	FVector GetDeltaAngForce(FVector Location) const;
 
 };

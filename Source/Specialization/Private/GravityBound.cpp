@@ -79,7 +79,7 @@ void UGravityBound::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 		// Execute Gravity
 		FVector Dir = ExecuteGravity(P, FireEngine);
 
-		AskAlignement(P, FireEngine, Dir);
+		if(FireEngine) AskAlignement(IRepositionable::Execute_GetRepositionableComponent(FireEngine), FireEngine, Dir);
 
 		AtmosphereVelChange(P, FireEngine, Dir);
 	}
@@ -113,7 +113,7 @@ FVector UGravityBound::ExecuteGravity(UPrimitiveComponent* PrimitiveComponent, U
 	return Dir;
 }
 
-void UGravityBound::AskAlignement(UPrimitiveComponent* PrimitiveComponent, UFireEngine* FireEngine, FVector Dir)
+void UGravityBound::AskAlignement(USceneComponent* PrimitiveComponent, UFireEngine* FireEngine, FVector Dir)
 {
 	if (!FireEngine) return;
 
@@ -142,7 +142,7 @@ void UGravityBound::AskAlignement(UPrimitiveComponent* PrimitiveComponent, UFire
 				TorqueVector = -PrimitiveComponent->GetRightVector();
 			}
 
-			FireEngine->AskReposition(ERepositionType::RIGHT, TorqueVector * RedirectionForce, ForceReposition);
+			IRepositionable::Execute_AskReposition(FireEngine, ERepositionType::RIGHT, TorqueVector * RedirectionForce, ForceReposition);
 			//P->AddTorqueInDegrees(TorqueVector * RedirectionForce, NAME_None, true);
 		}
 
@@ -157,7 +157,7 @@ void UGravityBound::AskAlignement(UPrimitiveComponent* PrimitiveComponent, UFire
 				TorqueVector = PrimitiveComponent->GetForwardVector();
 			}
 
-			FireEngine->AskReposition(ERepositionType::FORWARD, TorqueVector * RedirectionForce, ForceReposition);
+			IRepositionable::Execute_AskReposition(FireEngine, ERepositionType::FORWARD, TorqueVector * RedirectionForce, ForceReposition);
 			//P->AddTorqueInDegrees(TorqueVector * RedirectionForce, NAME_None, true);
 		}
 

@@ -62,10 +62,12 @@ public:
 
 	void UpdateGravityForce(FVector OldGForce, FVector NewGForce) override;
 
-	virtual void AskReposition(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition = false) override;
+	virtual void AskReposition_Implementation(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition = false) override;
 
 	bool HasPropulsion() const { return PropulsionValue > 0; }
 
 	UFUNCTION(BlueprintCallable)
 	float GetPropulsionValue() const { return PropulsionValue; }
+
+	USceneComponent* GetRepositionableComponent_Implementation() const override;
 };

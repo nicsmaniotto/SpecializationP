@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Hole.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "WhiteHole.generated.h"
 
 /**
@@ -19,4 +20,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "WhiteHole")
 	float RepulsionForce = 200;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WhiteHole", meta = (MakeEditWidget))
+	FVector RepositionLocation;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	FVector GetRepositionLocation() const { return UKismetMathLibrary::TransformLocation(GetActorTransform(), RepositionLocation); }
+
 };

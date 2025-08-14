@@ -4,12 +4,48 @@
 #include "Jetpack.h"
 #include "EnergyComponent.h"
 #include <Kismet/KismetMathLibrary.h>
+#include "Specialization/SpecializationCharacter.h"
+#include "Camera/CameraComponent.h"
 
 void UJetpack::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	HandlePropSpeed(DeltaTime);
+
+	/*if (!OnAir)
+	{
+		FHitResult Hit;
+		FVector Loc = UKismetMathLibrary::TransformLocation(GetOwner()->GetTransform(), FeetPosition);
+
+		GetWorld()->LineTraceSingleByChannel(Hit, Loc, Loc - OwnerPhysicsComponent->GetUpVector() * AirCheckRadius, ECollisionChannel::ECC_Visibility);
+
+		if (Hit.bBlockingHit)
+		{
+			FVector LookV = FVector::VectorPlaneProject(OwnerPhysicsComponent->GetForwardVector(), Hit.ImpactNormal);
+			FRotator r = UKismetMathLibrary::FindLookAtRotation(Loc, Loc + LookV);
+
+			DrawDebugLine(GetWorld(), Loc, Loc + LookV * 300, FColor::Red, false, .1f);
+
+			r = UKismetMathLibrary::RLerp(OwnerPhysicsComponent->GetComponentRotation(), r, DeltaTime * .1f, true);
+
+
+			Camera->SetWorldRotation(r.Quaternion(), false, nullptr, ETeleportType::TeleportPhysics);
+		}
+	}
+	else
+	{
+	}*/
+
+	/*USceneComponent* Camera = Cast<ASpecializationCharacter>(GetOwner())->GetFirstPersonCameraComponent();
+
+	FVector LookV = FVector::VectorPlaneProject(OwnerPhysicsComponent->GetForwardVector(), -GravityForce.GetSafeNormal());
+	FVector RightVec = -FVector::CrossProduct(LookV, -GravityForce.GetSafeNormal());
+
+
+	FRotator r = UKismetMathLibrary::FindLookAtRotation(OwnerPhysicsComponent->GetComponentLocation(), OwnerPhysicsComponent->GetComponentLocation() + LookV);
+
+	Camera->SetWorldRotation(r.Quaternion(), false, nullptr, ETeleportType::TeleportPhysics);*/
 }
 
 void UJetpack::HandlePropSpeed(float DeltaTime)
@@ -40,7 +76,7 @@ void UJetpack::SetDependencyComponent(UMarker* MarkerComponent, UEnergyComponent
 	EnergyComponent = _EnergyComponent;
 }
 
-bool UJetpack::HorizontalMovement(FVector2D LookAxisVector)
+bool UJetpack::VerticalMovement(float GravityMultiplier)
 {
 	if (GravityForce != FVector::ZeroVector)
 	{
@@ -55,7 +91,7 @@ bool UJetpack::HorizontalMovement(FVector2D LookAxisVector)
 
 	if (FuelConsumptionType != EEnergyType::NONE)
 	{
-		return Super::HorizontalMovement(LookAxisVector);
+		return Super::VerticalMovement(GravityMultiplier);
 	}
 
 	return false;
@@ -71,13 +107,13 @@ void UJetpack::EndThrottle(const FInputActionValue& Value)
 	Super::EndThrottle(Value);
 }
 
-bool UJetpack::VerticalMovement(float GravityMultiplier)
+bool UJetpack::HorizontalMovement(FVector2D LookAxisVector)
 {
 	FuelConsumptionType = EnergyComponent->StartConsumeEnergy(FuelConsumptionMap);
 
 	if (FuelConsumptionType != EEnergyType::NONE)
 	{
-		return Super::VerticalMovement(GravityMultiplier);
+		return Super::HorizontalMovement(LookAxisVector);
 	}
 
 	return false;
@@ -123,12 +159,26 @@ void UJetpack::UpdateGravityForce(FVector OldGForce, FVector NewGForce)
 	}
 }
 
-void UJetpack::AskReposition(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition)
+void UJetpack::AskReposition_Implementation(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition)
 {
-	//if (!OnAir || !OwnerPhysicsComponent->IsSimulatingPhysics()) return;
 	if (!OwnerPhysicsComponent->IsSimulatingPhysics()) return;
+	//if (!OwnerPhysicsComponent->IsSimulatingPhysics()) return;
 
-	Super::AskReposition(RepositionType, RepositionTorqueForce, ForceReposition);
+	//GetRepositionableComponent()->SetWorldRotation(r.Quaternion(), false, nullptr, ETeleportType::TeleportPhysics);
 
+	FVector RepositionForce = RepositionTorqueForce.GetSafeNormal();
+	FQuat Q = FQuat(RepositionForce, GetWorld()->GetDeltaSeconds());
 
+	IRepositionable::Execute_GetRepositionableComponent(this)->AddWorldRotation(Q.Rotator(), false, nullptr, ETeleportType::TeleportPhysics);
+}
+
+USceneComponent* UJetpack::GetRepositionableComponent_Implementation() const
+{
+	if (!GetOwner()->GetClass()->ImplementsInterface(URepositionable::StaticClass())) return Super::GetRepositionableComponent_Implementation();
+
+	USceneComponent* Repositionable = IRepositionable::Execute_GetRepositionableComponent(GetOwner());
+
+	if (!Repositionable) return Super::GetRepositionableComponent_Implementation();
+
+	return Repositionable;
 }

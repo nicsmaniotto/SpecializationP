@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include <Enums.h>
+#include "Repositionable.h"
 #include "FireEngine.generated.h"
 
 class APlayerController;
@@ -26,7 +27,7 @@ DECLARE_DYNAMIC_DELEGATE(FOnEndAutomaticPilot);
 
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class SPECIALIZATION_API UFireEngine : public UActorComponent
+class SPECIALIZATION_API UFireEngine : public UActorComponent, public IRepositionable
 {
 	GENERATED_BODY()
 
@@ -90,7 +91,7 @@ protected:
 
 	bool OnAir;
 
-	bool AirChecker(APlanet*& PlanetSurface);
+	bool AirChecker();
 
 	bool IsMoving = false;
 
@@ -108,6 +109,13 @@ protected:
 
 	UFUNCTION()
 	void LandHelper(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	
+	UFUNCTION()
+	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	
+	UFUNCTION()
+	void OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 
 	UPROPERTY()
 	APlanet* LandingPlanet;
@@ -133,8 +141,10 @@ public:
 	virtual void Look(const FInputActionValue& Value);
 	virtual void StopLook(const FInputActionValue& Value);
 
-	virtual void AskReposition(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition = false);
+	virtual void AskReposition_Implementation(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition = false) override;
 	virtual void StopReposition();
+
+	virtual USceneComponent* GetRepositionableComponent_Implementation() const override { return OwnerPhysicsComponent; }
 
 	virtual void UpdateGravityForce(FVector OldGForce, FVector NewGForce);
 

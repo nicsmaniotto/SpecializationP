@@ -51,7 +51,7 @@ protected:
 	FVector ExecuteGravity(UPrimitiveComponent* PrimitiveComponent, UFireEngine* FireEngine);
 
 	/*Acknowledges the fire engine involved of how to alignate with the gravity axis*/
-	void AskAlignement(UPrimitiveComponent* PrimitiveComponent, UFireEngine* FireEngine, FVector Dir);
+	void AskAlignement(USceneComponent* PrimitiveComponent, UFireEngine* FireEngine, FVector Dir);
 
 	UPROPERTY()
 	TMap<UFireEngine*, FVector> LastGForces;

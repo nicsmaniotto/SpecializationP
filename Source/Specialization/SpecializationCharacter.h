@@ -8,6 +8,7 @@
 #include "Possessable.h"
 #include "Interactable.h"
 #include "Enums.h"
+#include "Repositionable.h"
 #include "SpecializationCharacter.generated.h"
 
 UDELEGATE()
@@ -21,11 +22,12 @@ class UInputMappingContext;
 class ASpaceship;
 class UEnergyComponent;
 struct FInputActionValue;
+struct FBodyInstance;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UCLASS(config = Game)
-class ASpecializationCharacter : public ACharacter, public IPossessable
+class ASpecializationCharacter : public ACharacter, public IPossessable, public IRepositionable
 {
 	GENERATED_BODY()
 
@@ -37,6 +39,9 @@ class ASpecializationCharacter : public ACharacter, public IPossessable
 	UStaticMeshComponent* ConstraintMesh;*/
 
 	/** First person camera */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	USceneComponent* CameraSocket;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
 
@@ -109,6 +114,7 @@ public:
 
 protected:
 	/** Called for movement input */
+	void StartMove(const FInputActionValue& Value);
 	void Move(const FInputActionValue& Value);
 	void StopMove(const FInputActionValue& Value);
 
@@ -155,6 +161,27 @@ public:
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	bool bOnJetpack = false;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float MaxMovSpeed = 3800;
+
+	// Jump
+	void Jump() override;
+	void JumpOnGoing();
+	void StopJumping() override;
+
+	void Crouch(bool bClientSimulation = false) override;
+	void UnCrouch(bool bClientSimulation = false) override;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void ToggleCrouch(bool Active);
+
+	float JumpHoldTimer;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	UCurveFloat* JumpForceCurve;
+
+	bool bHasJumped;
 
 	// Look
 protected:
@@ -202,5 +229,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Energy")
 	TMap<EEnergyType, bool> OxygenConsumptionMap;
+
+	// Reposition
+public:
+	USceneComponent* GetRepositionableComponent_Implementation() const override { return CameraSocket; };
 };
 
