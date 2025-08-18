@@ -165,6 +165,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	float MaxMovSpeed = 3800;
 
+	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	FVector LastMovDirection;
+
 	// Jump
 	void Jump() override;
 	void JumpOnGoing();
@@ -180,6 +183,17 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	UCurveFloat* JumpForceCurve;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float JumpTopFreedomTime = .4f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float JumpTopGravityDivider = 1.5f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true", ClampMin = "0", ClampMax = "1"))
+	float JumpDirectionMultiplier = .4f;
+
+	float JumpTopFreedomTimer = 0;
 
 	bool bHasJumped;
 

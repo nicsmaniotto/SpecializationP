@@ -163,7 +163,7 @@ void UJetpack::CustomReposition(float DeltaTime)
 	LookAtMatrix.SetAxis(2, -GravityForce.GetSafeNormal());
 
 
-	FRotator r = UKismetMathLibrary::RLerp(Repositionable->GetComponentRotation(), LookAtMatrix.Rotator(), DeltaTime * LookDrag, true);
+	FRotator r = UKismetMathLibrary::RLerp(Repositionable->GetComponentRotation(), LookAtMatrix.Rotator(), DeltaTime * 50, true);
 
 	DrawDebugLine(GetWorld(), Repositionable->GetComponentLocation(), Repositionable->GetComponentLocation() + LookV * 100, FColor::Emerald, false, .1f);
 	DrawDebugLine(GetWorld(), Repositionable->GetComponentLocation(), Repositionable->GetComponentLocation() + RightVec * 100, FColor::Red, false, .1f);

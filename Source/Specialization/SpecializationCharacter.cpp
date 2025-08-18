@@ -36,7 +36,7 @@ ASpecializationCharacter::ASpecializationCharacter()
 	// Create a CameraComponent	
 	CameraSocket = CreateDefaultSubobject<USceneComponent>(TEXT("CameraSocket"));
 	CameraSocket->SetupAttachment(GetCapsuleComponent());
-	
+
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(CameraSocket);
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
@@ -110,13 +110,27 @@ void ASpecializationCharacter::Tick(float DeltaSeconds)
 	//if (PlanetSurface)
 	if (PlanetSurface && Jetpack->GetOnAir())
 	{
-		GetCapsuleComponent()->AddForce((PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation())) * 9, NAME_None, true);
-		//GetCapsuleComponent()->SetPhysicsLinearVelocity(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation()), false);
+		GetCapsuleComponent()->AddForce(
+			(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation())) * GetCapsuleComponent()->GetLinearDamping(),
+			NAME_None, true);
 	}
 
 	if (bHasJumped && Jetpack->GetOnAir())
 	{
-		bHasJumped = false;
+		if (Jetpack->GetGForce().SquaredLength() > 0
+			&& FVector::DotProduct(Jetpack->GetGForce(), GetCapsuleComponent()->GetPhysicsLinearVelocity()) > 0)
+		{
+			if (JumpTopFreedomTimer < JumpTopFreedomTime)
+			{
+				JumpTopFreedomTimer += DeltaSeconds;
+				GetCapsuleComponent()->AddForce(-Jetpack->GetGForce() / JumpTopGravityDivider, NAME_None, true);
+			}
+			else
+			{
+				bHasJumped = false;
+				JumpTopFreedomTimer = 0;
+			}
+		}
 	}
 }
 
@@ -194,7 +208,6 @@ void ASpecializationCharacter::StartMove(const FInputActionValue& Value)
 	if (PlanetSurface && !Jetpack->GetOnAir())
 	{
 		FVector DampCompensation = GetCapsuleComponent()->GetLinearDamping() * GetCapsuleComponent()->GetPhysicsLinearVelocity();
-		//GetCapsuleComponent()->AddForce(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation()) + DampCompensation / 1.2f, NAME_None, true);
 		FVector PlanetForces = PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation());
 
 		GetCapsuleComponent()->SetPhysicsLinearVelocity(PlanetForces);
@@ -217,52 +230,37 @@ void ASpecializationCharacter::Move(const FInputActionValue& Value)
 	if (Controller != nullptr && !Jetpack->GetOnAir() && !bHasJumped)
 	{
 		// add movement 
-		FVector DampCompensation = GetCapsuleComponent()->GetLinearDamping() * GetCapsuleComponent()->GetPhysicsLinearVelocity();
+		FVector PlanetVelocity = FVector::ZeroVector;
+
 		APlanet* PlanetSurface = Jetpack->GetPlanetSurface();
 		if (PlanetSurface)
 		{
-			//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation()) + DampCompensation, FColor::Blue, false, .1f);
-			//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() - PlanetSurface->GetDeltaVelocity() - PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation()), FColor::Blue, false, .1f);
-			DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + GetCapsuleComponent()->GetPhysicsLinearVelocity(), FColor::Blue, false, .1f);
-			//GetCapsuleComponent()->AddForce(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation()) + DampCompensation / 1.3f, NAME_None, true);
+			PlanetVelocity = PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation());
 		}
 
-		FVector Velocity = GetCapsuleComponent()->GetPhysicsLinearVelocity();
-		float VelMagnitude = Velocity.SquaredLength();
+		FVector ForVector = GetActorForwardVector();
 
-		FVector ForVector = GetActorForwardVector() * MovementVector.Y;
+		FVector RightVector = GetActorRightVector();
 
-		if (FVector::DotProduct(ForVector, Velocity.GetSafeNormal()) > 0.9f && VelMagnitude > FMath::Square(MaxMovSpeed))
+		if (Jetpack->GetGForce().SquaredLength() > 0)
 		{
-			//ForVector = FVector::ZeroVector;
+			ForVector = FVector::VectorPlaneProject(ForVector, -Jetpack->GetGForce().GetSafeNormal()).GetSafeNormal();
+			RightVector = FVector::CrossProduct(-Jetpack->GetGForce().GetSafeNormal(), ForVector);
 		}
 
-		FVector RightVector = GetActorRightVector() * MovementVector.X;
+		LastMovDirection = (ForVector * MovementVector.Y + RightVector * MovementVector.X).GetSafeNormal();
 
-		if (FVector::DotProduct(RightVector, Velocity.GetSafeNormal()) > 0.9f && VelMagnitude > FMath::Square(MaxMovSpeed))
-		{
-			//RightVector = FVector::ZeroVector;
-		}
-
-		/*GetCapsuleComponent()->AddImpulse(ForVector * GetCharacterMovement()->MaxWalkSpeed, NAME_None, true);
-		GetCapsuleComponent()->AddImpulse(RightVector * GetCharacterMovement()->MaxWalkSpeed, NAME_None, true);*/
-
-		ForVector += RightVector;
-
-		ForVector = PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation()) + ForVector.GetSafeNormal() * GetCharacterMovement()->MaxWalkSpeed;
-
-		//GetCapsuleComponent()->AddForce((PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation())) * 9, NAME_None, true);
+		ForVector = PlanetVelocity + LastMovDirection * GetCharacterMovement()->MaxWalkSpeed;
 
 		GetCapsuleComponent()->SetPhysicsLinearVelocity(ForVector, false);
-
-		/*GetCapsuleComponent()->AddForce(ForVector * GetCharacterMovement()->MaxWalkSpeed, NAME_None, true);
-		GetCapsuleComponent()->AddForce(RightVector * GetCharacterMovement()->MaxWalkSpeed, NAME_None, true);*/
 	}
 }
 
 void ASpecializationCharacter::StopMove(const FInputActionValue& Value)
 {
 	if (bOnJetpack) Jetpack->StopMove(Value);
+
+	LastMovDirection = FVector::ZeroVector;
 }
 
 void ASpecializationCharacter::Look(const FInputActionValue& Value)
@@ -384,9 +382,14 @@ void ASpecializationCharacter::StopJumping()
 	if (Jetpack->GetOnAir()) return;
 
 	FVector JumpDir = GetCapsuleComponent()->GetUpVector();
+	if (Jetpack->GetGForce().SquaredLength() > 0)
+	{
+		JumpDir += LastMovDirection * JumpDirectionMultiplier;
+	}
+
 	float ForceToApply = JumpForceCurve->GetFloatValue(JumpHoldTimer);
 
-	GetCapsuleComponent()->AddImpulse(JumpDir * ForceToApply, NAME_None, true);
+	GetCapsuleComponent()->AddImpulse(JumpDir.GetSafeNormal() * ForceToApply, NAME_None, true);
 
 	bHasJumped = true;
 }
