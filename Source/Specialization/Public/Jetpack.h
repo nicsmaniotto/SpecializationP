@@ -70,4 +70,8 @@ public:
 	float GetPropulsionValue() const { return PropulsionValue; }
 
 	USceneComponent* GetRepositionableComponent_Implementation() const override;
+
+	void CustomReposition(float DeltaTime);
+
+	bool IsForcedReposition;
 };

@@ -13,39 +13,7 @@ void UJetpack::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 
 	HandlePropSpeed(DeltaTime);
 
-	/*if (!OnAir)
-	{
-		FHitResult Hit;
-		FVector Loc = UKismetMathLibrary::TransformLocation(GetOwner()->GetTransform(), FeetPosition);
-
-		GetWorld()->LineTraceSingleByChannel(Hit, Loc, Loc - OwnerPhysicsComponent->GetUpVector() * AirCheckRadius, ECollisionChannel::ECC_Visibility);
-
-		if (Hit.bBlockingHit)
-		{
-			FVector LookV = FVector::VectorPlaneProject(OwnerPhysicsComponent->GetForwardVector(), Hit.ImpactNormal);
-			FRotator r = UKismetMathLibrary::FindLookAtRotation(Loc, Loc + LookV);
-
-			DrawDebugLine(GetWorld(), Loc, Loc + LookV * 300, FColor::Red, false, .1f);
-
-			r = UKismetMathLibrary::RLerp(OwnerPhysicsComponent->GetComponentRotation(), r, DeltaTime * .1f, true);
-
-
-			Camera->SetWorldRotation(r.Quaternion(), false, nullptr, ETeleportType::TeleportPhysics);
-		}
-	}
-	else
-	{
-	}*/
-
-	/*USceneComponent* Camera = Cast<ASpecializationCharacter>(GetOwner())->GetFirstPersonCameraComponent();
-
-	FVector LookV = FVector::VectorPlaneProject(OwnerPhysicsComponent->GetForwardVector(), -GravityForce.GetSafeNormal());
-	FVector RightVec = -FVector::CrossProduct(LookV, -GravityForce.GetSafeNormal());
-
-
-	FRotator r = UKismetMathLibrary::FindLookAtRotation(OwnerPhysicsComponent->GetComponentLocation(), OwnerPhysicsComponent->GetComponentLocation() + LookV);
-
-	Camera->SetWorldRotation(r.Quaternion(), false, nullptr, ETeleportType::TeleportPhysics);*/
+	CustomReposition(DeltaTime);
 }
 
 void UJetpack::HandlePropSpeed(float DeltaTime)
@@ -161,15 +129,11 @@ void UJetpack::UpdateGravityForce(FVector OldGForce, FVector NewGForce)
 
 void UJetpack::AskReposition_Implementation(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition)
 {
-	if (!OwnerPhysicsComponent->IsSimulatingPhysics()) return;
+	if (!OnAir || !OwnerPhysicsComponent->IsSimulatingPhysics()) return;
 	//if (!OwnerPhysicsComponent->IsSimulatingPhysics()) return;
+	IsForcedReposition = ForceReposition;
 
-	//GetRepositionableComponent()->SetWorldRotation(r.Quaternion(), false, nullptr, ETeleportType::TeleportPhysics);
-
-	FVector RepositionForce = RepositionTorqueForce.GetSafeNormal();
-	FQuat Q = FQuat(RepositionForce, GetWorld()->GetDeltaSeconds());
-
-	IRepositionable::Execute_GetRepositionableComponent(this)->AddWorldRotation(Q.Rotator(), false, nullptr, ETeleportType::TeleportPhysics);
+	if(IsForcedReposition) Super::AskReposition_Implementation(RepositionType, RepositionTorqueForce, ForceReposition);
 }
 
 USceneComponent* UJetpack::GetRepositionableComponent_Implementation() const
@@ -181,4 +145,28 @@ USceneComponent* UJetpack::GetRepositionableComponent_Implementation() const
 	if (!Repositionable) return Super::GetRepositionableComponent_Implementation();
 
 	return Repositionable;
+}
+
+void UJetpack::CustomReposition(float DeltaTime)
+{
+	if (GravityForce.SquaredLength() == 0 || IsForcedReposition) return;
+
+	USceneComponent* Repositionable = IRepositionable::Execute_GetRepositionableComponent(this);
+
+	FVector LookV = FVector::VectorPlaneProject(OwnerPhysicsComponent->GetForwardVector(), -GravityForce.GetSafeNormal()).GetSafeNormal();
+	FVector RightVec = -FVector::CrossProduct(LookV, -GravityForce.GetSafeNormal());
+	//FVector UpCorrected = FVector::CrossProduct(LookV, RightVec);
+
+	FMatrix LookAtMatrix;
+	LookAtMatrix.SetAxis(0, LookV);
+	LookAtMatrix.SetAxis(1, RightVec);
+	LookAtMatrix.SetAxis(2, -GravityForce.GetSafeNormal());
+
+
+	FRotator r = UKismetMathLibrary::RLerp(Repositionable->GetComponentRotation(), LookAtMatrix.Rotator(), DeltaTime * LookDrag, true);
+
+	DrawDebugLine(GetWorld(), Repositionable->GetComponentLocation(), Repositionable->GetComponentLocation() + LookV * 100, FColor::Emerald, false, .1f);
+	DrawDebugLine(GetWorld(), Repositionable->GetComponentLocation(), Repositionable->GetComponentLocation() + RightVec * 100, FColor::Red, false, .1f);
+
+	Repositionable->SetWorldRotation(r, false, nullptr, ETeleportType::TeleportPhysics);
 }

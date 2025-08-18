@@ -34,7 +34,7 @@ struct FEnergyInfo
     GENERATED_USTRUCT_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    EEnergyType EnergyType;
+    EEnergyType EnergyType = EEnergyType::NONE;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float GrowthValue = 0;
