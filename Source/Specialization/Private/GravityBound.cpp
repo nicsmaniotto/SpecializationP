@@ -6,6 +6,7 @@
 #include <FireEngine.h>
 #include <Kismet/KismetSystemLibrary.h>
 #include <Possessable.h>
+#include <Specialization/SpecializationGameMode.h>
 
 UGravityBound::UGravityBound()
 {
@@ -95,8 +96,8 @@ FVector UGravityBound::ExecuteGravity(UPrimitiveComponent* PrimitiveComponent, U
 
 	float GForce = GravityCurve->GetFloatValue(Dist);
 
-	//PrimitiveComponent->AddForce(Dir * GForce * PrimitiveComponent->GetMass());
-	PrimitiveComponent->AddForce(Dir * GForce, NAME_None, true);
+	FVector NewGForce = Dir * GForce * ASpecializationGameMode::GRAVITYMULTIPLIER;
+	PrimitiveComponent->AddForce(NewGForce, NAME_None, true);
 
 	DrawDebugLine(GetWorld(), PrimitiveComponent->GetComponentLocation(), PrimitiveComponent->GetComponentLocation() + Dir * Dist, FColor::Red, false, .1f);
 
@@ -104,8 +105,8 @@ FVector UGravityBound::ExecuteGravity(UPrimitiveComponent* PrimitiveComponent, U
 	if (FireEngine)
 	{
 		FVector OldGForce = LastGForces[FireEngine];
-		//LastGForces[FireEngine] = Dir * GForce * PrimitiveComponent->GetMass();
-		LastGForces[FireEngine] = Dir * GForce;
+
+		LastGForces[FireEngine] = NewGForce;
 
 		FireEngine->UpdateGravityForce(OldGForce, LastGForces[FireEngine]);
 	}

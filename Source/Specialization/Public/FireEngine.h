@@ -23,7 +23,7 @@ UDELEGATE()
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGravityUpdate, FVector, OldGForce, FVector, NewGForce);
 
 UDELEGATE()
-DECLARE_DYNAMIC_DELEGATE(FOnEndAutomaticPilot);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAutomaticPilot, bool, Active);
 
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -182,8 +182,8 @@ public:
 
 public:
 	// Automatic pilot
-	UPROPERTY()
-	FOnEndAutomaticPilot OnEndAutomaticPilot;
+	UPROPERTY(BlueprintAssignable)
+	FOnAutomaticPilot OnAutomaticPilot;
 
 	// Dependecies
 protected:

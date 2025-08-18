@@ -119,13 +119,8 @@ void UMarker::ToggleMarkObject()
 	}
 
 	IsMarking = !IsMarking;
-}
 
-bool UMarker::ToggleTrajectory()
-{
-	if (!IsMarking || !MarkedObject) return false;
-
-	return MarkedObject->ToggleTrajectory();
+	if (OnLock.IsBound()) OnLock.Broadcast(IsMarking);
 }
 
 FTransform UMarker::GetSelfTransform() const

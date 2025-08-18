@@ -128,7 +128,4 @@ protected:
 
 	UFUNCTION()
 	void OnGravityUpdate(FVector OldGForce, FVector NewGForce);
-
-	UFUNCTION()
-	void OnEndAutomaticPilot();
 };

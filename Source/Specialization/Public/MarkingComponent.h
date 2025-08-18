@@ -55,9 +55,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	virtual void ToggleLock(UMarker* Marker);
-	
-	UFUNCTION(BlueprintCallable)
-	virtual bool ToggleTrajectory();
 
 	UFUNCTION(BlueprintCallable)
 	FVector GetApproachForces() const { return ApproachForces; };

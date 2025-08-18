@@ -9,6 +9,7 @@
 
 class UInteraction;
 class UTransitionWidget;
+class UBaseMenu;
 
 DECLARE_DELEGATE(FOnTransition);
 
@@ -27,16 +28,16 @@ protected:
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
-	TSubclassOf<UUserWidget> BaseHUDWidgetClass;
+	TSubclassOf<UBaseMenu> BaseHUDWidgetClass;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
-	TSubclassOf<UUserWidget> ShipHUDWidgetClass;
+	TSubclassOf<UBaseMenu> ShipHUDWidgetClass;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "HUD")
-	UUserWidget* BaseHUDWidget;
+	UBaseMenu* BaseHUDWidget;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "HUD")
-	UUserWidget* ShipHUDWidget;
+	UBaseMenu* ShipHUDWidget;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
 	UInteraction* InteractionWidget;

@@ -83,17 +83,15 @@ void ASpecializationCharacter::BeginPlay()
 	Jetpack->SetDependencyComponent(MarkerComponent, EnergyComponent);
 
 	Jetpack->OnGravityUpdate.AddUniqueDynamic(this, &ASpecializationCharacter::OnGravityUpdate);
-
-	Jetpack->OnEndAutomaticPilot.BindDynamic(this, &ASpecializationCharacter::OnEndAutomaticPilot);
 }
 
 void ASpecializationCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	EnergyComponent->StartConsumeEnergy(OxygenConsumptionMap);
-
 	if (!GetController()) return;
+
+	EnergyComponent->StartConsumeEnergy(OxygenConsumptionMap);
 
 	// camera pitch movement
 	FRotator r = FirstPersonCameraComponent->GetRelativeRotation();
@@ -137,14 +135,6 @@ void ASpecializationCharacter::Tick(float DeltaSeconds)
 void ASpecializationCharacter::OnGravityUpdate(FVector OldGForce, FVector NewGForce)
 {
 	MarkerComponent->ToggleSelf(NewGForce.SquaredLength() == 0);
-}
-
-void ASpecializationCharacter::OnEndAutomaticPilot()
-{
-	if (!MarkerComponent->ToggleTrajectory())
-	{
-		Jetpack->ToggleAutomaticPilot(false);
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -303,10 +293,7 @@ void ASpecializationCharacter::AutomaticPilot(const FInputActionValue& Value)
 	}
 	else
 	{
-		if (MarkerComponent->ToggleTrajectory())
-		{
-			Jetpack->ToggleAutomaticPilot(true);
-		}
+		Jetpack->ToggleAutomaticPilot(true);
 	}
 
 }
@@ -348,6 +335,8 @@ void ASpecializationCharacter::UnPossess_Implementation()
 	}
 
 	TogglePhysicality(false);
+
+	EnergyComponent->StopConsumeEnergy(EEnergyType::OXYGEN);
 
 	OnSpaceshipInteraction.Broadcast(true);
 }

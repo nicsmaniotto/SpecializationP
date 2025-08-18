@@ -284,7 +284,7 @@ void UFireEngine::UpdateGravityForce(FVector OldGForce, FVector NewGForce)
 
 	if (IsAutomatic && GravityForce.SquaredLength() > 0)
 	{
-		OnEndAutomaticPilot.ExecuteIfBound();
+		ToggleAutomaticPilot(false);
 	}
 
 	OnGravityUpdate.Broadcast(OldForce, GravityForce);
@@ -297,10 +297,7 @@ void UFireEngine::ToggleAutomaticPilot(bool Active)
 
 	IsAutomatic = Active;
 
-	if (!Active)
-	{
-		OnEndAutomaticPilot.ExecuteIfBound();
-	}
+	if(OnAutomaticPilot.IsBound()) OnAutomaticPilot.Broadcast(IsAutomatic);
 }
 
 void UFireEngine::AutomaticPilotMovement()
@@ -309,7 +306,7 @@ void UFireEngine::AutomaticPilotMovement()
 
 	if (!Marker->GetIsMarking() || !MC)
 	{
-		OnEndAutomaticPilot.ExecuteIfBound();
+		ToggleAutomaticPilot(false);
 		return;
 	}
 
@@ -318,7 +315,7 @@ void UFireEngine::AutomaticPilotMovement()
 
 	if (ApproachForces.SquaredLength() < FMath::Square(AutomaticApproachAcceptance))
 	{
-		OnEndAutomaticPilot.ExecuteIfBound();
+		ToggleAutomaticPilot(false);
 		return;
 	}
 
@@ -351,7 +348,7 @@ void UFireEngine::AutomaticPilotMovement()
 
 	if (!MovFlag)
 	{
-		OnEndAutomaticPilot.ExecuteIfBound();
+		ToggleAutomaticPilot(false);
 	}
 }
 

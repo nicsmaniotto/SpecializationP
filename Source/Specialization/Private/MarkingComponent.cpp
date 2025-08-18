@@ -23,14 +23,11 @@ void UMarkingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (MarkerObj)
+	if (MarkerObj && CurrentLockType == ELockType::LOCKED)
 	{
 		ApproachForces = CalcApproachForces();
 
-		if (CurrentLockType == ELockType::TRAJECTORY)
-		{
-			MarkerWidget->ShowTrajectoryForce(ApproachForces);
-		}
+		MarkerWidget->ShowTrajectoryForce(ApproachForces);
 	}
 }
 
@@ -64,7 +61,6 @@ FVector UMarkingComponent::CalcApproachForces()
 
 	Dir = FinalLoc - MarkerObj->GetSelfTransform().GetLocation();
 
-
 	return Dir;
 }
 
@@ -96,15 +92,4 @@ void UMarkingComponent::ToggleLock(UMarker* Marker)
 	if (!MarkerObj) return;
 
 	// ... on marker change
-}
-
-bool UMarkingComponent::ToggleTrajectory()
-{
-	if (CurrentLockType == ELockType::NONE) return false;
-
-	CurrentLockType = CurrentLockType == ELockType::LOCKED ? ELockType::TRAJECTORY : ELockType::LOCKED;
-
-	MarkerWidget->ChangeBehavior(CurrentLockType);
-
-	return CurrentLockType == ELockType::TRAJECTORY;
 }

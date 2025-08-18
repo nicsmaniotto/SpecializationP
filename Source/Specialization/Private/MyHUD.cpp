@@ -4,7 +4,10 @@
 #include "MyHUD.h"
 #include "Interaction.h"
 #include "TransitionWidget.h"
+#include "BaseMenu.h"
 #include "Specialization/SpecializationCharacter.h"
+#include "Spaceship.h"
+#include <Kismet/GameplayStatics.h>
 
 void AMyHUD::BeginPlay()
 {
@@ -27,22 +30,27 @@ void AMyHUD::BeginPlay()
 		TransitionWidget->OnCompletedTransition.AddUniqueDynamic(this, &AMyHUD::OnCompletedTransition);
 	}
 
+	ASpecializationCharacter* Player = Cast<ASpecializationCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
+
 	// Creating HUD widgets
 	if (BaseHUDWidgetClass)
 	{
-		BaseHUDWidget = CreateWidget<UUserWidget>(GetWorld(), BaseHUDWidgetClass);
+		BaseHUDWidget = CreateWidget<UBaseMenu>(GetWorld(), BaseHUDWidgetClass);
 		BaseHUDWidget->AddToViewport(1);
+		BaseHUDWidget->SetupEvents(Player);
 	}
+
+	AActor* SS = UGameplayStatics::GetActorOfClass(GetWorld(), ASpaceship::StaticClass());
 
 	if (ShipHUDWidgetClass)
 	{
-		ShipHUDWidget = CreateWidget<UUserWidget>(GetWorld(), ShipHUDWidgetClass);
+		ShipHUDWidget = CreateWidget<UBaseMenu>(GetWorld(), ShipHUDWidgetClass);
 		ShipHUDWidget->AddToViewport(1);
+		ShipHUDWidget->SetupEvents(SS);
 	}
 
 	AskToggleWidget(true, EWidgetType::BASIC);
 
-	ASpecializationCharacter* Player = Cast<ASpecializationCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
 	if (Player)
 	{
 		Player->OnSpaceshipInteraction.AddUniqueDynamic(this, &AMyHUD::OnSpaceshipInteraction);

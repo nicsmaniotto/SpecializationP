@@ -13,6 +13,13 @@ class ASpecializationGameMode : public AGameModeBase
 
 public:
 	ASpecializationGameMode();
+
+	void BeginPlay() override;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gravity")
+	float GravityMultiplier = 30000;
+
+	static inline float GRAVITYMULTIPLIER;
 };
 
 

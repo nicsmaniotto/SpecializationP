@@ -12,3 +12,8 @@ ASpecializationGameMode::ASpecializationGameMode()
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
 
 }
+
+void ASpecializationGameMode::BeginPlay()
+{
+	GRAVITYMULTIPLIER = GravityMultiplier;
+}

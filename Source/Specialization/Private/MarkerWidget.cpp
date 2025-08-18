@@ -25,7 +25,7 @@ void UMarkerWidget::ChangeBehavior_Implementation(ELockType LockType)
 {
 	for (auto& Elem : IndicatorMap)
 	{
-		Elem.Value->ToggleIndicator(LockType == ELockType::TRAJECTORY);
+		Elem.Value->ToggleIndicator(LockType == ELockType::LOCKED);
 	}
 
 	switch (LockType)

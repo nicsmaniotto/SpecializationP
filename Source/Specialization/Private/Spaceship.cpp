@@ -52,8 +52,6 @@ void ASpaceship::BeginPlay()
 	FireEngine->SetDependencyComponent(MarkerComponent);
 
 	FireEngine->OnGravityUpdate.AddUniqueDynamic(this, &ASpaceship::OnGravityUpdate);
-
-	FireEngine->OnEndAutomaticPilot.BindDynamic(this, &ASpaceship::OnEndAutomaticPilot);
 }
 
 // Called every frame
@@ -194,24 +192,13 @@ void ASpaceship::AutomaticPilot(const FInputActionValue& Value)
 	}
 	else
 	{
-		if (MarkerComponent->ToggleTrajectory())
-		{
-			FireEngine->ToggleAutomaticPilot(true);
-		}
+		FireEngine->ToggleAutomaticPilot(true);
 	}
 }
 
 void ASpaceship::OnGravityUpdate(FVector OldGForce, FVector NewGForce)
 {
 	MarkerComponent->ToggleSelf(NewGForce.SquaredLength() == 0);
-}
-
-void ASpaceship::OnEndAutomaticPilot()
-{
-	if (!MarkerComponent->ToggleTrajectory())
-	{
-		FireEngine->ToggleAutomaticPilot(false);
-	}
 }
 
 void ASpaceship::Move(const FInputActionValue& Value)

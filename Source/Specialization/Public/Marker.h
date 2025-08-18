@@ -9,6 +9,9 @@
 class UMarkingComponent;
 class APlayerController;
 
+UDELEGATE()
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLock, bool, IsLocking);
+
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class SPECIALIZATION_API UMarker : public UActorComponent
@@ -56,13 +59,13 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	void ToggleMarkObject();
-	
-	UFUNCTION(BlueprintCallable)
-	bool ToggleTrajectory();
 
 	UFUNCTION(BlueprintCallable)
 	FTransform GetSelfTransform() const;
 
 	UFUNCTION(BlueprintCallable)
 	void ToggleSelf(bool Active);
+
+	UPROPERTY(BlueprintAssignable)
+	FOnLock OnLock;
 };

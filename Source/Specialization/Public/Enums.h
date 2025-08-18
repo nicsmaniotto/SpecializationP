@@ -61,5 +61,4 @@ UENUM(BlueprintType)
 enum class ELockType : uint8 {
     NONE = 0 UMETA(DisplayName = "NONE"),
     LOCKED = 1 UMETA(DisplayName = "LOCKED"),
-    TRAJECTORY = 2  UMETA(DisplayName = "TRAJECTORY"),
 };
