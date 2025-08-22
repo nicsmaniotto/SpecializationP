@@ -8,6 +8,7 @@
 #include "Specialization/SpecializationCharacter.h"
 #include "Spaceship.h"
 #include <Kismet/GameplayStatics.h>
+#include <Setuppable.h>
 
 void AMyHUD::BeginPlay()
 {
@@ -37,7 +38,11 @@ void AMyHUD::BeginPlay()
 	{
 		BaseHUDWidget = CreateWidget<UBaseMenu>(GetWorld(), BaseHUDWidgetClass);
 		BaseHUDWidget->AddToViewport(1);
-		BaseHUDWidget->SetupEvents(Player);
+
+		if (BaseHUDWidget->GetClass()->ImplementsInterface(USetuppable::StaticClass()))
+		{
+			ISetuppable::Execute_SetupEvents(BaseHUDWidget, Player);
+		}
 	}
 
 	AActor* SS = UGameplayStatics::GetActorOfClass(GetWorld(), ASpaceship::StaticClass());
@@ -46,7 +51,11 @@ void AMyHUD::BeginPlay()
 	{
 		ShipHUDWidget = CreateWidget<UBaseMenu>(GetWorld(), ShipHUDWidgetClass);
 		ShipHUDWidget->AddToViewport(1);
-		ShipHUDWidget->SetupEvents(SS);
+
+		if (ShipHUDWidget->GetClass()->ImplementsInterface(USetuppable::StaticClass()))
+		{
+			ISetuppable::Execute_SetupEvents(ShipHUDWidget, SS);
+		}
 	}
 
 	AskToggleWidget(true, EWidgetType::BASIC);

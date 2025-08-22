@@ -45,7 +45,7 @@ ASpecializationCharacter::ASpecializationCharacter()
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
 	Mesh1P->SetOnlyOwnerSee(true);
-	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
+	Mesh1P->SetupAttachment(CameraSocket);
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
 	//Mesh1P->SetRelativeRotation(FRotator(0.9f, -19.19f, 5.2f));
@@ -101,15 +101,13 @@ void ASpecializationCharacter::Tick(float DeltaSeconds)
 
 	GetCharacterMovement()->SetActive(false);
 
-	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + GetCapsuleComponent()->GetPhysicsLinearVelocity(), FColor::Blue, false, .1f);
-
 	// adjust velocity with planet if present
 	APlanet* PlanetSurface = Jetpack->GetPlanetSurface();
-	//if (PlanetSurface)
+
 	if (PlanetSurface && Jetpack->GetOnAir())
 	{
 		GetCapsuleComponent()->AddForce(
-			(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation())) * GetCapsuleComponent()->GetLinearDamping(),
+			(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation())) * (GetCapsuleComponent()->GetLinearDamping()),
 			NAME_None, true);
 	}
 
@@ -135,6 +133,22 @@ void ASpecializationCharacter::Tick(float DeltaSeconds)
 void ASpecializationCharacter::OnGravityUpdate(FVector OldGForce, FVector NewGForce)
 {
 	MarkerComponent->ToggleSelf(NewGForce.SquaredLength() == 0);
+}
+
+bool ASpecializationCharacter::ToggleJetpack()
+{
+	bOnJetpack = !bOnJetpack;
+
+	TArray<UMaterial*>* Materials = bOnJetpack ? &JetpackMaterials : &NormalMaterials;
+
+	for (int i = 0; i < (*Materials).Num(); i++)
+	{
+		Mesh1P->SetMaterial(i, (*Materials)[i]);
+	}
+
+	OnJetpackEquip.Broadcast(bOnJetpack);
+
+	return bOnJetpack;
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -197,10 +211,14 @@ void ASpecializationCharacter::StartMove(const FInputActionValue& Value)
 	//if (PlanetSurface)
 	if (PlanetSurface && !Jetpack->GetOnAir())
 	{
-		FVector DampCompensation = GetCapsuleComponent()->GetLinearDamping() * GetCapsuleComponent()->GetPhysicsLinearVelocity();
+		FVector DampCompensation = GetCapsuleComponent()->GetPhysicsLinearVelocity() / GetCapsuleComponent()->GetLinearDamping();
 		FVector PlanetForces = PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation());
 
-		GetCapsuleComponent()->SetPhysicsLinearVelocity(PlanetForces);
+		//GetCapsuleComponent()->SetPhysicsLinearVelocity(PlanetForces, true);
+
+		GetCapsuleComponent()->AddForce(
+			(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation())) * GetCapsuleComponent()->GetLinearDamping(),
+			NAME_None, true);
 	}
 
 }
@@ -213,11 +231,13 @@ void ASpecializationCharacter::Move(const FInputActionValue& Value)
 
 	if (bOnJetpack && Jetpack->GetOnAir())
 	{
+		IsMoving = false;
+
 		Jetpack->Move(Value);
 		return;
 	}
 
-	if (Controller != nullptr && !Jetpack->GetOnAir() && !bHasJumped)
+	if (Controller != nullptr)
 	{
 		// add movement 
 		FVector PlanetVelocity = FVector::ZeroVector;
@@ -240,15 +260,29 @@ void ASpecializationCharacter::Move(const FInputActionValue& Value)
 
 		LastMovDirection = (ForVector * MovementVector.Y + RightVector * MovementVector.X).GetSafeNormal();
 
-		ForVector = PlanetVelocity + LastMovDirection * GetCharacterMovement()->MaxWalkSpeed;
+		ForVector = LastMovDirection * GetCharacterMovement()->MaxWalkSpeed;
 
-		GetCapsuleComponent()->SetPhysicsLinearVelocity(ForVector, false);
+		if (!Jetpack->GetOnAir())
+		{
+			ForVector += PlanetVelocity;
+
+			GetCapsuleComponent()->SetPhysicsLinearVelocity(ForVector, false);
+
+			IsMoving = true;
+		}
+		else
+		{
+			//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + ForVector, FColor::Blue, false, .1f);
+			GetCapsuleComponent()->AddForce(ForVector * 10, NAME_None, true);
+		}
 	}
 }
 
 void ASpecializationCharacter::StopMove(const FInputActionValue& Value)
 {
 	if (bOnJetpack) Jetpack->StopMove(Value);
+
+	IsMoving = false;
 
 	LastMovDirection = FVector::ZeroVector;
 }
@@ -355,8 +389,6 @@ void ASpecializationCharacter::JumpOnGoing()
 	if (!JumpForceCurve) return;
 
 	JumpHoldTimer += GetWorld()->GetDeltaSeconds();
-
-	GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Jump timer: %f"), JumpHoldTimer));
 }
 
 void ASpecializationCharacter::StopJumping()

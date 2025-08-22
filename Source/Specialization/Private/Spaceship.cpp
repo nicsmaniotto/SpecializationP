@@ -14,6 +14,7 @@
 #include <InteractableComponent.h>
 #include <MyHUD.h>
 #include <Marker.h>
+#include <EngineAudioComponent.h>
 
 // Sets default values
 ASpaceship::ASpaceship()
@@ -42,6 +43,19 @@ ASpaceship::ASpaceship()
 
 	// Create Marker component
 	MarkerComponent = CreateDefaultSubobject<UMarker>(TEXT("Marker Component"));
+
+	// Create Engine Audio Components
+	LeftEngine = CreateDefaultSubobject<UEngineAudioComponent>(TEXT("Left Engine Audio"));
+	LeftEngine->SetupAttachment(Mesh);
+
+	RightEngine = CreateDefaultSubobject<UEngineAudioComponent>(TEXT("Right Engine Audio"));
+	RightEngine->SetupAttachment(Mesh);
+	
+	TopRightEngine = CreateDefaultSubobject<UEngineAudioComponent>(TEXT("TopRight Engine Audio"));
+	TopRightEngine->SetupAttachment(Mesh);
+	
+	TopLeftEngine = CreateDefaultSubobject<UEngineAudioComponent>(TEXT("TopLeft Engine Audio"));
+	TopLeftEngine->SetupAttachment(Mesh);
 }
 
 // Called when the game starts or when spawned

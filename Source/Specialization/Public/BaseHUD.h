@@ -6,13 +6,14 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/TextBlock.h"
 #include <UMG.h>
+#include "Setuppable.h"
 #include "BaseHUD.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class SPECIALIZATION_API UBaseHUD : public UUserWidget
+class SPECIALIZATION_API UBaseHUD : public UUserWidget, public ISetuppable
 {
 	GENERATED_BODY()
 
@@ -48,5 +49,5 @@ protected:
 	float DisabledInputAlpha = .2f;
 
 public:
-	void SetupEvents(AActor* LinkedActor);
+	void SetupEvents_Implementation(AActor* LinkedActor) override;
 };

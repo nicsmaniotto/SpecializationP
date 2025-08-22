@@ -25,6 +25,12 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGravityUpdate, FVector, OldGForc
 UDELEGATE()
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAutomaticPilot, bool, Active);
 
+UDELEGATE()
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnVerticalMovement, FVector, ForceDir, float, Magnitude, FTransform, Transform);
+
+UDELEGATE()
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnLateralMovement, FVector, ForceDir, float, Magnitude, FTransform, Transform);
+
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class SPECIALIZATION_API UFireEngine : public UActorComponent, public IRepositionable
@@ -87,7 +93,7 @@ protected:
 	FVector FeetPosition;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | General")
-	float AirCheckRadius = 100;
+	float AirCheckLength = 100;
 
 	bool OnAir;
 
@@ -109,13 +115,12 @@ protected:
 
 	UFUNCTION()
 	void LandHelper(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-	
+
 	UFUNCTION()
 	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	
+
 	UFUNCTION()
 	void OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
 
 	UPROPERTY()
 	APlanet* LandingPlanet;
@@ -123,6 +128,12 @@ protected:
 	/*Automatic pilot*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Automatic")
 	float AutomaticApproachAcceptance = 10;
+
+	UPROPERTY(BlueprintReadOnly)
+	FHitResult SurfaceHit;
+
+	bool IsRetroFireActivated;
+
 
 public:
 	virtual void Move(const FInputActionValue& Value);
@@ -156,6 +167,7 @@ public:
 
 	bool GetIsAutomaticPilot() const { return IsAutomatic; }
 
+	UFUNCTION(BlueprintCallable)
 	bool GetOnAir() const { return OnAir; }
 
 	// Functionality
@@ -180,10 +192,20 @@ public:
 	UFUNCTION(BlueprintCallable)
 	APlanet* GetPlanetSurface() const { return LandingPlanet; };
 
+	UFUNCTION(BlueprintCallable)
+	FHitResult GetHitSurface() const { return SurfaceHit; }
+
 public:
 	// Automatic pilot
 	UPROPERTY(BlueprintAssignable)
 	FOnAutomaticPilot OnAutomaticPilot;
+
+	// Movement
+	UPROPERTY(BlueprintAssignable)
+	FOnVerticalMovement OnVerticalMovement;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnLateralMovement OnLateralMovement;
 
 	// Dependecies
 protected:

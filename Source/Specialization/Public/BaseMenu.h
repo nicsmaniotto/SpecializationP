@@ -4,15 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Setuppable.h"
 #include "BaseMenu.generated.h"
 
 class UBaseHUD;
+class UCanvasPanel;
 
 /**
  * 
  */
 UCLASS()
-class SPECIALIZATION_API UBaseMenu : public UUserWidget
+class SPECIALIZATION_API UBaseMenu : public UUserWidget, public ISetuppable
 {
 	GENERATED_BODY()
 
@@ -21,6 +23,6 @@ protected:
 	UBaseHUD* BaseHUD;
 
 public:
-	void SetupEvents(AActor* LinkedActor);
+	virtual void SetupEvents_Implementation(AActor* LinkedActor) override;
 	
 };

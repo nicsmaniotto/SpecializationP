@@ -58,6 +58,24 @@ enum class EIndicatorType : uint8 {
 };
 
 UENUM(BlueprintType)
+enum class EEnginePosition : uint8 {
+    CENTER = 0 UMETA(DisplayName = "CENTER"),
+    TOP = 1 UMETA(DisplayName = "TOP"),
+    RIGHT = 2  UMETA(DisplayName = "RIGHT"),
+    LEFT = 3  UMETA(DisplayName = "LEFT"),
+};
+
+UENUM(BlueprintType)
+enum class EBarPosition : uint8 {
+    FRONT = 0 UMETA(DisplayName = "FRONT"),
+    BACK = 1 UMETA(DisplayName = "BACK"),
+    TOP = 2 UMETA(DisplayName = "TOP"),
+    BOTTOM = 3 UMETA(DisplayName = "BOTTOM"),
+    RIGHT = 4  UMETA(DisplayName = "RIGHT"),
+    LEFT = 5  UMETA(DisplayName = "LEFT"),
+};
+
+UENUM(BlueprintType)
 enum class ELockType : uint8 {
     NONE = 0 UMETA(DisplayName = "NONE"),
     LOCKED = 1 UMETA(DisplayName = "LOCKED"),

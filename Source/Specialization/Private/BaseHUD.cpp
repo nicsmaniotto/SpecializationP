@@ -6,7 +6,7 @@
 #include <Marker.h>
 #include <Specialization/SpecializationGameMode.h>
 
-void UBaseHUD::SetupEvents(AActor* LinkedActor)
+void UBaseHUD::SetupEvents_Implementation(AActor* LinkedActor)
 {
 	if (!LinkedActor) return;
 

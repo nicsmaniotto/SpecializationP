@@ -31,7 +31,7 @@ protected:
 	ASpecializationCharacter* Player;
 
 	UPROPERTY()
-	TArray<TScriptInterface<IInteractable>> InteractObjects;
+	TArray<UObject*> InteractObjects;
 
 public:
 	void Interact_Implementation(class ASpecializationCharacter* _Player);

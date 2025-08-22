@@ -56,6 +56,8 @@ void UInteractableComponent::OnEndOverlap(UPrimitiveComponent* OverlappedCompone
 	
 	Player = nullptr;
 
+	if (!GetWorld() || !GetWorld()->GetFirstPlayerController()) return;
+
 	AMyHUD* HUD = Cast<AMyHUD>(GetWorld()->GetFirstPlayerController()->GetHUD());
 	HUD->AskToggleWidget(false, EWidgetType::INTERACT);
 }
@@ -64,9 +66,9 @@ void UInteractableComponent::Interact_Implementation(ASpecializationCharacter* _
 {
 	if(!Player) return;
 
-	for (TScriptInterface<IInteractable> I : InteractObjects)
+	for (UObject* O : InteractObjects)
 	{
-		IInteractable::Execute_Interact(I->_getUObject(), Player);
+		IInteractable::Execute_Interact(O, Player);
 	}
 }
 

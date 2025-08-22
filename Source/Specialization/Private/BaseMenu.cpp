@@ -4,10 +4,13 @@
 #include "BaseMenu.h"
 #include "BaseHUD.h"
 
-void UBaseMenu::SetupEvents(AActor* LinkedActor)
+
+void UBaseMenu::SetupEvents_Implementation(AActor* LinkedActor)
 {
 	if (!BaseHUD) return;
 
-	BaseHUD->SetupEvents(LinkedActor);
+	if (BaseHUD->GetClass()->ImplementsInterface(USetuppable::StaticClass()))
+	{
+		ISetuppable::Execute_SetupEvents(BaseHUD, LinkedActor);
+	}
 }
-

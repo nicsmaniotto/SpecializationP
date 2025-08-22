@@ -11,6 +11,7 @@
 class APlayerController;
 class ASpecializationCharacter;
 class UInputMappingContext;
+class UEngineAudioComponent;
 struct FInputActionValue;
 
 UCLASS()
@@ -66,6 +67,18 @@ class SPECIALIZATION_API ASpaceship : public APawn, public IPossessable, public 
 	/** Marker Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* AutomaticPilotAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UEngineAudioComponent* LeftEngine;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UEngineAudioComponent* RightEngine;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UEngineAudioComponent* TopRightEngine;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UEngineAudioComponent* TopLeftEngine;
 
 public:
 	// Sets default values for this pawn's properties

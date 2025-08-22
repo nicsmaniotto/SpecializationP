@@ -14,6 +14,9 @@
 UDELEGATE()
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSpaceshipInteraction, bool, OnSpaceship);
 
+UDELEGATE()
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnJetpackEquip, bool, IsEquipped);
+
 class UInputComponent;
 class USkeletalMeshComponent;
 class UCameraComponent;
@@ -41,7 +44,7 @@ class ASpecializationCharacter : public ACharacter, public IPossessable, public 
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	USceneComponent* CameraSocket;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
 
@@ -74,11 +77,11 @@ class ASpecializationCharacter : public ACharacter, public IPossessable, public 
 	/** Interact Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* InteractAction;
-	
+
 	/** Marker Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* MarkerAction;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UMarker* MarkerComponent;
 
@@ -117,6 +120,11 @@ protected:
 	void StartMove(const FInputActionValue& Value);
 	void Move(const FInputActionValue& Value);
 	void StopMove(const FInputActionValue& Value);
+
+	bool IsMoving = false;
+
+	UFUNCTION(BlueprintCallable)
+	bool GetIsMoving() const { return IsMoving; }
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
@@ -161,7 +169,7 @@ public:
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	bool bOnJetpack = false;
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	float MaxMovSpeed = 3800;
 
@@ -186,10 +194,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	float JumpTopFreedomTime = .4f;
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	float JumpTopGravityDivider = 1.5f;
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true", ClampMin = "0", ClampMax = "1"))
 	float JumpDirectionMultiplier = .4f;
 
@@ -227,6 +235,19 @@ protected:
 
 	UFUNCTION()
 	void OnGravityUpdate(FVector OldGForce, FVector NewGForce);
+
+	UFUNCTION(BlueprintCallable)
+	bool ToggleJetpack();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Jetpack")
+	TArray<UMaterial*> NormalMaterials;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Jetpack")
+	TArray<UMaterial*> JetpackMaterials;
+
+public:
+	UPROPERTY(BlueprintAssignable)
+	FOnJetpackEquip OnJetpackEquip;
 
 	// Interaction
 public:

@@ -56,7 +56,6 @@ void UFireEngine::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
 
 	OnAir = AirChecker();
 
-	//OwnerPhysicsComponent->BodyInstance.bNotifyRigidBodyCollision = OnAir;
 	OwnerPhysicsComponent->SetNotifyRigidBodyCollision(OnAir);
 
 	if (!(OnAir || IsThrottling))
@@ -69,31 +68,25 @@ void UFireEngine::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
 
 bool UFireEngine::AirChecker()
 {
-	TArray<UPrimitiveComponent*> Hits;
-
 	FVector Loc = UKismetMathLibrary::TransformLocation(GetOwner()->GetTransform(), FeetPosition);
+	FVector Dir = GravityForce.GetSafeNormal();
 
-	UKismetSystemLibrary::SphereOverlapComponents(GetWorld(), Loc, AirCheckRadius,
-		{ EObjectTypeQuery::ObjectTypeQuery1 }, UStaticMeshComponent::StaticClass(), { GetOwner() }, Hits);
-
-	DrawDebugSphere(GetWorld(), Loc, AirCheckRadius, 32, FColor::Emerald, false, .01f);
-
-	/*UPrimitiveComponent** PlanetMesh = Hits.FindByPredicate([&](UPrimitiveComponent* P)->bool {
-		return !!Cast<APlanet>(P->GetOwner());
-		});
-
-	if (PlanetMesh)
+	if (Dir.SquaredLength() == 0)
 	{
-		UPrimitiveComponent* Aux = *PlanetMesh;
-		AActor* Aux1 = Aux->GetOwner();
-		PlanetSurface = Cast<APlanet>((*PlanetMesh)->GetOwner());
+		Dir == -OwnerPhysicsComponent->GetUpVector();
 	}
-	else
-	{
-		PlanetSurface = nullptr;
-	}*/
 
-	return Hits.Num() == 0;
+	//UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility);
+
+	UKismetSystemLibrary::LineTraceSingle(GetWorld(), Loc, Loc + Dir * AirCheckLength, UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_WorldStatic), false,
+		{ GetOwner() }, EDrawDebugTrace::ForOneFrame, SurfaceHit, true, FColor::Blue);
+
+	/*UKismetSystemLibrary::SphereOverlapComponents(GetWorld(), Loc, AirCheckRadius,
+		{ EObjectTypeQuery::ObjectTypeQuery1 }, UStaticMeshComponent::StaticClass(), { GetOwner() }, Hits);*/
+
+	//DrawDebugSphere(GetWorld(), Loc, AirCheckRadius, 32, FColor::Emerald, false, .01f);
+
+	return !SurfaceHit.bBlockingHit;
 }
 
 void UFireEngine::LandHelper(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -130,7 +123,7 @@ void UFireEngine::Move(const FInputActionValue& Value)
 	if (IsAutomatic) return;
 
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
-	LookAxisVector.Normalize();
+	//LookAxisVector.Normalize();
 
 	if (HorizontalMovement(LookAxisVector))
 	{
@@ -141,6 +134,8 @@ void UFireEngine::Move(const FInputActionValue& Value)
 void UFireEngine::StopMove(const FInputActionValue& Value)
 {
 	IsMoving = false;
+
+	if (OnLateralMovement.IsBound()) OnLateralMovement.Broadcast(FVector::ZeroVector, 0, OwnerPhysicsComponent->GetComponentTransform());
 }
 
 void UFireEngine::Throttle(const FInputActionValue& Value)
@@ -159,6 +154,8 @@ void UFireEngine::Throttle(const FInputActionValue& Value)
 void UFireEngine::EndThrottle(const FInputActionValue& Value)
 {
 	IsThrottling = false;
+
+	if (!IsReversing && OnVerticalMovement.IsBound()) OnVerticalMovement.Broadcast(FVector::ZeroVector, 0, OwnerPhysicsComponent->GetComponentTransform());
 }
 
 void UFireEngine::Reverse(const FInputActionValue& Value)
@@ -183,14 +180,18 @@ void UFireEngine::Reverse(const FInputActionValue& Value)
 void UFireEngine::StopReverse(const FInputActionValue& Value)
 {
 	IsReversing = false;
+
+	if (!IsThrottling && OnVerticalMovement.IsBound()) OnVerticalMovement.Broadcast(FVector::ZeroVector, 0, OwnerPhysicsComponent->GetComponentTransform());
 }
 
 bool UFireEngine::HorizontalMovement(FVector2D LookAxisVector)
 {
 	FVector FinalDir = OwnerPhysicsComponent->GetForwardVector() * LookAxisVector.Y + OwnerPhysicsComponent->GetRightVector() * LookAxisVector.X;
-	FinalDir.Normalize();
 
 	OwnerPhysicsComponent->AddForce(FinalDir * FMath::Square(LateralMoveForce) * OwnerPhysicsComponent->GetMass());
+
+	if (OnLateralMovement.IsBound()) OnLateralMovement.Broadcast(FinalDir, LateralMoveForce, OwnerPhysicsComponent->GetComponentTransform());
+
 	return true;
 }
 
@@ -211,9 +212,9 @@ bool UFireEngine::VerticalMovement(float GravityMultiplier)
 
 	OwnerPhysicsComponent->AddForce(Throttle * FMath::Square(ThrottleForce) * OwnerPhysicsComponent->GetMass());
 
-	return true;
+	if (OnVerticalMovement.IsBound()) OnVerticalMovement.Broadcast(Throttle, ThrottleForce * MoveForce, OwnerPhysicsComponent->GetComponentTransform());
 
-	//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Throttle: %f - %f - %f"), Throttle.X, Throttle.Y, Throttle.Z));
+	return true;
 }
 
 void UFireEngine::StartLook(const FInputActionValue& Value)
@@ -298,6 +299,11 @@ void UFireEngine::ToggleAutomaticPilot(bool Active)
 	IsAutomatic = Active;
 
 	if(OnAutomaticPilot.IsBound()) OnAutomaticPilot.Broadcast(IsAutomatic);
+
+	if (!Active)
+	{
+		IsRetroFireActivated = false;
+	}
 }
 
 void UFireEngine::AutomaticPilotMovement()
@@ -325,13 +331,24 @@ void UFireEngine::AutomaticPilotMovement()
 	RelativeDir.Normalize();
 
 	FVector2D XYForce = FVector2D(RelativeDir.Y, RelativeDir.X);
+	
+	float TempDistToStop = (PhysicsVelocity.SquaredLength() * OwnerPhysicsComponent->GetLinearDamping()) / (2.35f * (ApproachForces.GetSafeNormal() * MoveForce).SquaredLength());
 
-	float DistToStop = PhysicsVelocity.SquaredLength() / (2 * (ApproachForces.GetSafeNormal() * MoveForce).Length());
+	if (!IsRetroFireActivated && FVector::DotProduct(PhysicsVelocity, ApproachForces) > 0 && FMath::Square(TempDistToStop) >= ApproachForces.SquaredLength())
+	{
+		IsRetroFireActivated = true;
+	}
 
-	if (FVector::DotProduct(PhysicsVelocity, ApproachForces) > 0 && DistToStop / 4 >= ApproachForces.Length())
+	if (IsRetroFireActivated)
 	{
 		XYForce *= -1;
 		RelativeDir.Z *= -1;
+	}
+
+	if (IsRetroFireActivated && FVector::DotProduct(PhysicsVelocity, ApproachForces) < 0)
+	{
+		ToggleAutomaticPilot(false);
+		return;
 	}
 
 	bool MovFlag = true;
