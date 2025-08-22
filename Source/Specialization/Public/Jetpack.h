@@ -29,6 +29,9 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Propulsion")
 	float PropulsionDecaySpeed = 1.2f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Rotation")
+	float CustomRepositionLerpSpeed = 65;
 
 	UFUNCTION()
 	void HandlePropSpeed(float DeltaTime);

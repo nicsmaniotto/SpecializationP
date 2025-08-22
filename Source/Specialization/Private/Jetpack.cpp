@@ -133,7 +133,7 @@ void UJetpack::AskReposition_Implementation(ERepositionType RepositionType, FVec
 	//if (!OwnerPhysicsComponent->IsSimulatingPhysics()) return;
 	IsForcedReposition = ForceReposition;
 
-	if(IsForcedReposition) Super::AskReposition_Implementation(RepositionType, RepositionTorqueForce, ForceReposition);
+	if (IsForcedReposition) Super::AskReposition_Implementation(RepositionType, RepositionTorqueForce, ForceReposition);
 }
 
 USceneComponent* UJetpack::GetRepositionableComponent_Implementation() const
@@ -149,21 +149,28 @@ USceneComponent* UJetpack::GetRepositionableComponent_Implementation() const
 
 void UJetpack::CustomReposition(float DeltaTime)
 {
-	if (GravityForce.SquaredLength() == 0 || IsForcedReposition) return;
-
 	USceneComponent* Repositionable = IRepositionable::Execute_GetRepositionableComponent(this);
+	FRotator NextRotation;
 
-	FVector LookV = FVector::VectorPlaneProject(OwnerPhysicsComponent->GetForwardVector(), -GravityForce.GetSafeNormal()).GetSafeNormal();
-	FVector RightVec = -FVector::CrossProduct(LookV, -GravityForce.GetSafeNormal());
-	//FVector UpCorrected = FVector::CrossProduct(LookV, RightVec);
+	if (GravityForce.SquaredLength() == 0 || IsForcedReposition)
+	{
+		NextRotation = OwnerPhysicsComponent->GetComponentRotation();
+	}
+	else
+	{
+		FVector LookV = FVector::VectorPlaneProject(OwnerPhysicsComponent->GetForwardVector(), -GravityForce.GetSafeNormal()).GetSafeNormal();
+		FVector RightVec = -FVector::CrossProduct(LookV, -GravityForce.GetSafeNormal());
+		//FVector UpCorrected = FVector::CrossProduct(LookV, RightVec);
 
-	FMatrix LookAtMatrix;
-	LookAtMatrix.SetAxis(0, LookV);
-	LookAtMatrix.SetAxis(1, RightVec);
-	LookAtMatrix.SetAxis(2, -GravityForce.GetSafeNormal());
+		FMatrix LookAtMatrix;
+		LookAtMatrix.SetAxis(0, LookV);
+		LookAtMatrix.SetAxis(1, RightVec);
+		LookAtMatrix.SetAxis(2, -GravityForce.GetSafeNormal());
 
+		NextRotation = LookAtMatrix.Rotator();
+	}
 
-	FRotator r = UKismetMathLibrary::RLerp(Repositionable->GetComponentRotation(), LookAtMatrix.Rotator(), DeltaTime * 50, true);
+	FRotator r = UKismetMathLibrary::RLerp(Repositionable->GetComponentRotation(), NextRotation, DeltaTime * CustomRepositionLerpSpeed, true);
 
 	/*DrawDebugLine(GetWorld(), Repositionable->GetComponentLocation(), Repositionable->GetComponentLocation() + LookV * 100, FColor::Emerald, false, .1f);
 	DrawDebugLine(GetWorld(), Repositionable->GetComponentLocation(), Repositionable->GetComponentLocation() + RightVec * 100, FColor::Red, false, .1f);*/

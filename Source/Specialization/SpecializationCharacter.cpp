@@ -372,6 +372,8 @@ void ASpecializationCharacter::UnPossess_Implementation()
 
 	EnergyComponent->StopConsumeEnergy(EEnergyType::OXYGEN);
 
+	Jetpack->ToggleAutomaticPilot(false);
+
 	OnSpaceshipInteraction.Broadcast(true);
 }
 

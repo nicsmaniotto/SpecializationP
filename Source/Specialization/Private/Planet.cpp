@@ -39,8 +39,6 @@ void APlanet::BeginPlay()
 {
 	Super::BeginPlay();
 
-	LastLocation = Mesh->GetComponentLocation();
-
 	// Trick to enable collision on already overlapping objects
 	SetActorEnableCollision(false);
 
@@ -73,6 +71,7 @@ void APlanet::SetupChildren()
 	GravityBound->AttachToComponent(Mesh, Rules);
 }
 
+
 // Called every frame
 void APlanet::Tick(float DeltaTime)
 {
@@ -85,7 +84,6 @@ void APlanet::Tick(float DeltaTime)
 
 FVector APlanet::GetDeltaVelocity() const
 {
-	//return (Mesh->GetComponentLocation() - LastLocation) / GetWorld()->GetDeltaSeconds();
 	return Mesh->GetPhysicsLinearVelocity();
 }
 
@@ -95,8 +93,6 @@ FVector APlanet::GetDeltaAngForce(FVector Location) const
 
 	DrawDebugLine(GetWorld(), GetWorld()->GetFirstPlayerController()->GetPawn()->GetActorLocation(),
 		GetWorld()->GetFirstPlayerController()->GetPawn()->GetActorLocation() - AngVelForce, FColor::Emerald, false, .1f);
-
-	//GEngine->AddOnScreenDebugMessage(-1, .1f, FColor::Emerald, FString::Printf(TEXT("Vel: %f"), Mesh->GetPhysicsAngularVelocityInDegrees().Length()));
 
 	return AngVelForce;
 }
@@ -110,10 +106,13 @@ void APlanet::MeshRotation(float DeltaTime)
 
 void APlanet::OrbitFollow(float DeltaTime)
 {
-	LastLocation = Mesh->GetComponentLocation();
-
 	PositionInSpline += OrbitSpeed * DeltaTime;
 
+	RepositionMesh();
+}
+
+void APlanet::RepositionMesh()
+{
 	if (PositionInSpline >= Orbit->GetSplineLength())
 	{
 		PositionInSpline -= (int)PositionInSpline;

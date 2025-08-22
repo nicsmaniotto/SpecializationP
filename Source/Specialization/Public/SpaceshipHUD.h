@@ -19,6 +19,18 @@ class SPECIALIZATION_API USpaceshipHUD : public UBaseMenu
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Base", meta = (BindWidget))
 	class USpaceshipMovUI* MovUI;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Base", meta = (BindWidget))
+	class UTextBlock* ToggleJetpackTxt;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Base", meta = (BindWidget))
+	FText EquipTxt;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Base", meta = (BindWidget))
+	FText UnequipTxt;
+
+	UFUNCTION()
+	void OnJetpackEquip(bool OnJetpack);
 
 	virtual void SetupEvents_Implementation(AActor* LinkedActor) override;
 	

@@ -104,6 +104,9 @@ void ASpaceship::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 		// Marker
 		EnhancedInputComponent->BindAction(MarkerAction, ETriggerEvent::Started, this, &ASpaceship::LockObject);
 		EnhancedInputComponent->BindAction(AutomaticPilotAction, ETriggerEvent::Triggered, this, &ASpaceship::AutomaticPilot);
+
+		// JetpackInteraction
+		EnhancedInputComponent->BindAction(ToggleJetpackAction, ETriggerEvent::Triggered, this, &ASpaceship::JetpackInteraction);
 	}
 
 }
@@ -133,6 +136,8 @@ void ASpaceship::UnPossess_Implementation()
 			Subsystem->RemoveMappingContext(SpaceshipMappingContext);
 		}
 	}
+
+	FireEngine->ToggleAutomaticPilot(false);
 
 	Possesser->SetActorLocationAndRotation(InteractComponent->GetComponentLocation(), InteractComponent->GetComponentRotation(), false, nullptr, ETeleportType::TeleportPhysics);
 }

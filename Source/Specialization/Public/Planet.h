@@ -45,6 +45,7 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void OrbitFollow(float DeltaTime);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet | Orbit")
 	float PositionInSpline = 0;
 	
 public:	
@@ -62,7 +63,8 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void SetupChildren();
 
-	FVector LastLocation;
+	UFUNCTION(BlueprintCallable)
+	void RepositionMesh();
 
 public:	
 	// Called every frame

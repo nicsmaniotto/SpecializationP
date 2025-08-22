@@ -107,13 +107,14 @@ UMarkingComponent* UMarker::CheckMarker(APlayerController* PlayerController)
 
 void UMarker::ToggleMarkObject()
 {
+	if (!MarkedObject) return;
+
 	if (IsMarking)
 	{
 		MarkedObject->ToggleLock(nullptr);
 	}
 	else
 	{
-		if (!MarkedObject) return;
 
 		MarkedObject->ToggleLock(this);
 	}

@@ -67,6 +67,10 @@ class SPECIALIZATION_API ASpaceship : public APawn, public IPossessable, public 
 	/** Marker Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* AutomaticPilotAction;
+	
+	/** Toggle Jetpack Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ToggleJetpackAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UEngineAudioComponent* LeftEngine;
@@ -141,4 +145,9 @@ protected:
 
 	UFUNCTION()
 	void OnGravityUpdate(FVector OldGForce, FVector NewGForce);
+
+	// Suit Interaction
+protected:
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void JetpackInteraction();
 };
