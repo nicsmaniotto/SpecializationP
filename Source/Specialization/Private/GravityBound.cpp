@@ -144,7 +144,6 @@ void UGravityBound::AskAlignement(USceneComponent* PrimitiveComponent, UFireEngi
 			}
 
 			IRepositionable::Execute_AskReposition(FireEngine, ERepositionType::RIGHT, TorqueVector * RedirectionForce, ForceReposition);
-			//P->AddTorqueInDegrees(TorqueVector * RedirectionForce, NAME_None, true);
 		}
 
 		if (FVector::CrossProduct(RefAxisRight, PrimitiveComponent->GetRightVector()).SquaredLength() > FMath::Square(.02f))
@@ -159,7 +158,6 @@ void UGravityBound::AskAlignement(USceneComponent* PrimitiveComponent, UFireEngi
 			}
 
 			IRepositionable::Execute_AskReposition(FireEngine, ERepositionType::FORWARD, TorqueVector * RedirectionForce, ForceReposition);
-			//P->AddTorqueInDegrees(TorqueVector * RedirectionForce, NAME_None, true);
 		}
 
 		//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Dist: %f - Force: %f - Dot: %f "), Dist, GravityForce, FVector::CrossProduct(RefAxisRight, P->GetRightVector()).Length(), .05f));
@@ -213,8 +211,6 @@ void UGravityBound::AtmosphereVelChange(UPrimitiveComponent* PrimitiveComponent,
 
 	if (FMath::IsNearlyZero(DotP, AtmoDotValue))
 	{
-		//GEngine->AddOnScreenDebugMessage(-1, .01f, FColor::Yellow, FString::Printf(TEXT("Dot: %f -> Adding Velocity"), DotP));
-
 		VelocityDir = FVector::VectorPlaneProject(VelocityDir, -Dir);
 
 		PrimitiveComponent->AddForce(VelocityDir * PrimitiveComponent->GetMass() * VelChangeValue);

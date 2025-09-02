@@ -104,12 +104,20 @@ void ASpecializationCharacter::Tick(float DeltaSeconds)
 	// adjust velocity with planet if present
 	APlanet* PlanetSurface = Jetpack->GetPlanetSurface();
 
-	if (PlanetSurface && Jetpack->GetOnAir())
+	if (PlanetSurface)
 	{
-		GetCapsuleComponent()->AddForce(
-			(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation())) * (GetCapsuleComponent()->GetLinearDamping()),
-			NAME_None, true);
+		if (Jetpack->GetOnAir())
+		{
+			GetCapsuleComponent()->AddForce(
+				(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation())) * (GetCapsuleComponent()->GetLinearDamping()),
+				NAME_None, true);
+		}
+		else if (!IsMoving && !bHasJumped)
+		{
+			GetCapsuleComponent()->SetPhysicsLinearVelocity(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation()), false);
+		}
 	}
+
 
 	if (bHasJumped && Jetpack->GetOnAir())
 	{
@@ -208,7 +216,7 @@ void ASpecializationCharacter::TogglePhysicality(bool Active)
 void ASpecializationCharacter::StartMove(const FInputActionValue& Value)
 {
 	APlanet* PlanetSurface = Jetpack->GetPlanetSurface();
-	//if (PlanetSurface)
+
 	if (PlanetSurface && !Jetpack->GetOnAir())
 	{
 		FVector DampCompensation = GetCapsuleComponent()->GetPhysicsLinearVelocity() / GetCapsuleComponent()->GetLinearDamping();
@@ -272,8 +280,7 @@ void ASpecializationCharacter::Move(const FInputActionValue& Value)
 		}
 		else
 		{
-			//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + ForVector, FColor::Blue, false, .1f);
-			GetCapsuleComponent()->AddForce(ForVector * 10, NAME_None, true);
+			if (!!PlanetSurface) GetCapsuleComponent()->AddForce(ForVector * GetCapsuleComponent()->GetLinearDamping(), NAME_None, true);
 		}
 	}
 }

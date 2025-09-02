@@ -34,8 +34,7 @@ void UMarker::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponen
 	{
 		if (MarkedObject)
 		{
-			MarkedObject->ToggleVisualLock(false);
-			MarkedObject = nullptr;
+			ToggleSelf(false);
 		}
 
 		return;
@@ -107,7 +106,7 @@ UMarkingComponent* UMarker::CheckMarker(APlayerController* PlayerController)
 
 void UMarker::ToggleMarkObject()
 {
-	if (!MarkedObject) return;
+	//if (!MarkedObject) return;
 
 	if (IsMarking)
 	{
@@ -131,8 +130,6 @@ FTransform UMarker::GetSelfTransform() const
 
 void UMarker::ToggleSelf(bool Active)
 {
-	SetComponentTickEnabled(Active);
-
 	if (!Active && !!MarkedObject)
 	{
 		MarkedObject->ToggleVisualLock(false);

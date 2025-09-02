@@ -83,6 +83,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | Look")
 	float LookDrag = 10;
+	
+	UFUNCTION(BlueprintCallable, Category = "Movement | Look")
+	virtual FRotator GetDirectionRotation() const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | Reposition")
 	float RepositionTimerThreshold = 1.5f;
@@ -112,6 +115,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Landing")
 	float LandingLinearVelocityDivider = 100;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Damping")
+	float SpaceLinearDamping = .1f;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Movement | Damping")
+	float NormalLinearDamping;
 
 	UFUNCTION()
 	void LandHelper(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);

@@ -9,6 +9,7 @@
 
 class UBaseHUD;
 class UCanvasPanel;
+class URadialSlider;
 
 /**
  * 
@@ -26,9 +27,20 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetAnim), Transient)
 	UWidgetAnimation* AppearAnim;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Base", meta = (BindWidget))
+	UWidget* PropulsionSlider;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetAnim), Transient)
+	UWidgetAnimation* PropulsionAppearAnim;
 
 	UFUNCTION()
 	void OnJetpackEquip(bool IsEquipped);
+
+	UFUNCTION()
+	void OnGravityUpdate(FVector OldGravity, FVector NewGravity);
+
+	bool IsJetpackEquipped;
 
 public:
 	void SetupEvents_Implementation(AActor* LinkedActor) override;

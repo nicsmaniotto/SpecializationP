@@ -15,6 +15,7 @@
 #include <MyHUD.h>
 #include <Marker.h>
 #include <EngineAudioComponent.h>
+#include <SpaceshipWidgetComponent.h>
 
 // Sets default values
 ASpaceship::ASpaceship()
@@ -50,12 +51,16 @@ ASpaceship::ASpaceship()
 
 	RightEngine = CreateDefaultSubobject<UEngineAudioComponent>(TEXT("Right Engine Audio"));
 	RightEngine->SetupAttachment(Mesh);
-	
+
 	TopRightEngine = CreateDefaultSubobject<UEngineAudioComponent>(TEXT("TopRight Engine Audio"));
 	TopRightEngine->SetupAttachment(Mesh);
-	
+
 	TopLeftEngine = CreateDefaultSubobject<UEngineAudioComponent>(TEXT("TopLeft Engine Audio"));
 	TopLeftEngine->SetupAttachment(Mesh);
+
+	// Create Spaceship Widget Component
+	SpaceshipWidgetComponent = CreateDefaultSubobject<USpaceshipWidgetComponent>(TEXT("Spaceship Widget Component"));
+	SpaceshipWidgetComponent->SetupAttachment(Mesh);
 }
 
 // Called when the game starts or when spawned
@@ -66,6 +71,16 @@ void ASpaceship::BeginPlay()
 	FireEngine->SetDependencyComponent(MarkerComponent);
 
 	FireEngine->OnGravityUpdate.AddUniqueDynamic(this, &ASpaceship::OnGravityUpdate);
+	FireEngine->OnAutomaticPilot.AddUniqueDynamic(this, &ASpaceship::OnAutomaticPilot);
+}
+
+void ASpaceship::OnAutomaticPilot(bool Active)
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+	if (!PlayerController) return;
+
+	ToggleContext(PlayerController, SpaceshipManualMappingContext, !Active);
 }
 
 // Called every frame
@@ -115,31 +130,48 @@ void ASpaceship::Possess_Implementation(APawn* _Possesser)
 {
 	Possesser = _Possesser;
 
-	if (APlayerController* PlayerController = Cast<APlayerController>(Possesser->GetController()))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(SpaceshipMappingContext, 0);
-			PlayerController->Possess(this);
-		}
-	}
+	APlayerController* PlayerController = Cast<APlayerController>(Possesser->GetController());
+
+	if (!PlayerController)return;
+
+	ToggleContext(PlayerController, SpaceshipMappingContext, true);
+	ToggleContext(PlayerController, SpaceshipManualMappingContext, true);
+
+	PlayerController->Possess(this);
 }
 
 void ASpaceship::UnPossess_Implementation()
 {
 	if (!Possesser) return;
 
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->RemoveMappingContext(SpaceshipMappingContext);
-		}
-	}
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+	if (!PlayerController)return;
+
+	ToggleContext(PlayerController, SpaceshipMappingContext, false);
+	ToggleContext(PlayerController, SpaceshipManualMappingContext, false);
 
 	FireEngine->ToggleAutomaticPilot(false);
 
 	Possesser->SetActorLocationAndRotation(InteractComponent->GetComponentLocation(), InteractComponent->GetComponentRotation(), false, nullptr, ETeleportType::TeleportPhysics);
+}
+
+void ASpaceship::ToggleContext(APlayerController* PlayerController, UInputMappingContext* MappingContext, bool IsAdding) const
+{
+	if (PlayerController)
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			if (IsAdding)
+			{
+				Subsystem->AddMappingContext(MappingContext, 0);
+			}
+			else
+			{
+				Subsystem->RemoveMappingContext(MappingContext);
+			}
+		}
+	}
 }
 
 void ASpaceship::Interact_Implementation(ASpecializationCharacter* Player)
@@ -205,14 +237,11 @@ void ASpaceship::AutomaticPilot(const FInputActionValue& Value)
 {
 	if (FireEngine->IsInAtmosphere()) return;
 
-	if (FireEngine->GetIsAutomaticPilot())
-	{
-		FireEngine->ToggleAutomaticPilot(false);
-	}
-	else
-	{
-		FireEngine->ToggleAutomaticPilot(true);
-	}
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+	if (!PlayerController) return;
+
+	FireEngine->ToggleAutomaticPilot(!FireEngine->GetIsAutomaticPilot());
 }
 
 void ASpaceship::OnGravityUpdate(FVector OldGForce, FVector NewGForce)

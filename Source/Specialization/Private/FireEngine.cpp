@@ -40,6 +40,10 @@ void UFireEngine::BeginPlay()
 		}
 	}
 
+	if (!OwnerPhysicsComponent) return;
+
+	NormalLinearDamping = OwnerPhysicsComponent->GetLinearDamping();
+
 	OwnerPhysicsComponent->OnComponentHit.AddUniqueDynamic(this, &UFireEngine::LandHelper);
 
 	OwnerPhysicsComponent->OnComponentBeginOverlap.AddUniqueDynamic(this, &UFireEngine::OnBeginOverlap);
@@ -64,6 +68,11 @@ void UFireEngine::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
 	}
 
 	if (IsAutomatic) AutomaticPilotMovement();
+}
+
+FRotator UFireEngine::GetDirectionRotation() const
+{
+	return OwnerPhysicsComponent->GetComponentRotation();
 }
 
 bool UFireEngine::AirChecker()
@@ -186,18 +195,21 @@ void UFireEngine::StopReverse(const FInputActionValue& Value)
 
 bool UFireEngine::HorizontalMovement(FVector2D LookAxisVector)
 {
-	FVector FinalDir = OwnerPhysicsComponent->GetForwardVector() * LookAxisVector.Y + OwnerPhysicsComponent->GetRightVector() * LookAxisVector.X;
+	FVector FinalDir = GetDirectionRotation().Quaternion().GetForwardVector() * LookAxisVector.Y + GetDirectionRotation().Quaternion().GetRightVector() * LookAxisVector.X;
 
 	OwnerPhysicsComponent->AddForce(FinalDir * FMath::Square(LateralMoveForce) * OwnerPhysicsComponent->GetMass());
 
-	if (OnLateralMovement.IsBound()) OnLateralMovement.Broadcast(FinalDir, LateralMoveForce, OwnerPhysicsComponent->GetComponentTransform());
+	FTransform t = OwnerPhysicsComponent->GetComponentTransform();
+	t.SetRotation(GetDirectionRotation().Quaternion());
+
+	if (OnLateralMovement.IsBound()) OnLateralMovement.Broadcast(FinalDir, LateralMoveForce, t);
 
 	return true;
 }
 
 bool UFireEngine::VerticalMovement(float GravityMultiplier)
 {
-	FVector Throttle = OwnerPhysicsComponent->GetUpVector();
+	FVector Throttle = GetDirectionRotation().Quaternion().GetUpVector();
 	//Throttle.Normalize();
 	Throttle *= GravityMultiplier;
 
@@ -212,7 +224,10 @@ bool UFireEngine::VerticalMovement(float GravityMultiplier)
 
 	OwnerPhysicsComponent->AddForce(Throttle * FMath::Square(ThrottleForce) * OwnerPhysicsComponent->GetMass());
 
-	if (OnVerticalMovement.IsBound()) OnVerticalMovement.Broadcast(Throttle, ThrottleForce * MoveForce, OwnerPhysicsComponent->GetComponentTransform());
+	FTransform t = OwnerPhysicsComponent->GetComponentTransform();
+	t.SetRotation(GetDirectionRotation().Quaternion());
+
+	if (OnVerticalMovement.IsBound()) OnVerticalMovement.Broadcast(Throttle, ThrottleForce * MoveForce, t);
 
 	return true;
 }
@@ -288,6 +303,8 @@ void UFireEngine::UpdateGravityForce(FVector OldGForce, FVector NewGForce)
 		ToggleAutomaticPilot(false);
 	}
 
+	OwnerPhysicsComponent->SetLinearDamping(GravityForce.SquaredLength() == 0 ? SpaceLinearDamping : NormalLinearDamping);
+
 	OnGravityUpdate.Broadcast(OldForce, GravityForce);
 }
 
@@ -303,6 +320,12 @@ void UFireEngine::ToggleAutomaticPilot(bool Active)
 	if (!Active)
 	{
 		IsRetroFireActivated = false;
+
+		OwnerPhysicsComponent->SetLinearDamping(SpaceLinearDamping);
+	}
+	else
+	{
+		OwnerPhysicsComponent->SetLinearDamping(NormalLinearDamping);
 	}
 }
 

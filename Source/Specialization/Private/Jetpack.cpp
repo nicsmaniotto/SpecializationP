@@ -37,6 +37,20 @@ void UJetpack::HandlePropSpeed(float DeltaTime)
 	PropulsionValue = UKismetMathLibrary::FInterpTo_Constant(PropulsionValue, TargetValue, DeltaTime, PropSpeed);
 }
 
+FRotator UJetpack::GetDirectionRotation() const
+{
+	FVector LookV = FVector::VectorPlaneProject(OwnerPhysicsComponent->GetForwardVector(), -GravityForce.GetSafeNormal()).GetSafeNormal();
+	FVector RightVec = -FVector::CrossProduct(LookV, -GravityForce.GetSafeNormal());
+	//FVector UpCorrected = FVector::CrossProduct(LookV, RightVec);
+
+	FMatrix LookAtMatrix;
+	LookAtMatrix.SetAxis(0, LookV);
+	LookAtMatrix.SetAxis(1, RightVec);
+	LookAtMatrix.SetAxis(2, -GravityForce.GetSafeNormal());
+
+	return LookAtMatrix.Rotator();
+}
+
 void UJetpack::SetDependencyComponent(UMarker* MarkerComponent, UEnergyComponent* _EnergyComponent)
 {
 	Super::SetDependencyComponent(MarkerComponent);
@@ -158,16 +172,16 @@ void UJetpack::CustomReposition(float DeltaTime)
 	}
 	else
 	{
-		FVector LookV = FVector::VectorPlaneProject(OwnerPhysicsComponent->GetForwardVector(), -GravityForce.GetSafeNormal()).GetSafeNormal();
-		FVector RightVec = -FVector::CrossProduct(LookV, -GravityForce.GetSafeNormal());
-		//FVector UpCorrected = FVector::CrossProduct(LookV, RightVec);
+		//FVector LookV = FVector::VectorPlaneProject(OwnerPhysicsComponent->GetForwardVector(), -GravityForce.GetSafeNormal()).GetSafeNormal();
+		//FVector RightVec = -FVector::CrossProduct(LookV, -GravityForce.GetSafeNormal());
+		////FVector UpCorrected = FVector::CrossProduct(LookV, RightVec);
 
-		FMatrix LookAtMatrix;
-		LookAtMatrix.SetAxis(0, LookV);
-		LookAtMatrix.SetAxis(1, RightVec);
-		LookAtMatrix.SetAxis(2, -GravityForce.GetSafeNormal());
+		//FMatrix LookAtMatrix;
+		//LookAtMatrix.SetAxis(0, LookV);
+		//LookAtMatrix.SetAxis(1, RightVec);
+		//LookAtMatrix.SetAxis(2, -GravityForce.GetSafeNormal());
 
-		NextRotation = LookAtMatrix.Rotator();
+		NextRotation = GetDirectionRotation();
 	}
 
 	FRotator r = UKismetMathLibrary::RLerp(Repositionable->GetComponentRotation(), NextRotation, DeltaTime * CustomRepositionLerpSpeed, true);

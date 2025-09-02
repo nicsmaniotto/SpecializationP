@@ -4,6 +4,7 @@
 #include "SpaceshipMovUI.h"
 #include "FireEngine.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Specialization/SpecializationCharacter.h"
 
 void USpaceshipMovUI::NativeConstruct()
 {
@@ -25,16 +26,35 @@ void USpaceshipMovUI::SetupEvents_Implementation(AActor* LinkedActor)
 		FE->OnLateralMovement.AddUniqueDynamic(this, &USpaceshipMovUI::OnLateralMovement);
 		FE->OnAutomaticPilot.AddUniqueDynamic(this, &USpaceshipMovUI::OnAutomaticPilot);
 	}
+
+	ASpecializationCharacter* Player = Cast<ASpecializationCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
+
+	if (!Player) return;
+
+	Player->OnSpaceshipInteraction.AddUniqueDynamic(this, &USpaceshipMovUI::OnSpaceshipInteraction);
+}
+
+void USpaceshipMovUI::OnSpaceshipInteraction(bool OnSpaceship)
+{
+	if (!OnSpaceship)
+	{
+		ResetPercentages();
+	}
 }
 
 void USpaceshipMovUI::OnAutomaticPilot(bool Active)
 {
 	if (!Active)
 	{
-		for (auto& Elem : BarPositions)
-		{
-			Elem.Value->SetPercent(0);
-		}
+		ResetPercentages();
+	}
+}
+
+void USpaceshipMovUI::ResetPercentages()
+{
+	for (auto& Elem : BarPositions)
+	{
+		Elem.Value->SetPercent(0);
 	}
 }
 
@@ -44,7 +64,7 @@ void USpaceshipMovUI::OnVerticalMovement(FVector WorldDir, float Magnitude, FTra
 	FVector RelativeDir = UKismetMathLibrary::InverseTransformDirection(CallingTransform, WorldDir);
 
 	EBarPosition Pos = EBarPosition::TOP;
-	
+
 	if (RelativeDir.Z < 0)
 	{
 		Pos = EBarPosition::BOTTOM;

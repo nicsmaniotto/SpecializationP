@@ -12,6 +12,7 @@ class APlayerController;
 class ASpecializationCharacter;
 class UInputMappingContext;
 class UEngineAudioComponent;
+class USpaceshipWidgetComponent;
 struct FInputActionValue;
 
 UCLASS()
@@ -41,6 +42,9 @@ class SPECIALIZATION_API ASpaceship : public APawn, public IPossessable, public 
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputMappingContext* SpaceshipMappingContext;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputMappingContext* SpaceshipManualMappingContext;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	class UCapsuleComponent* CollisionComponent;
@@ -83,6 +87,9 @@ class SPECIALIZATION_API ASpaceship : public APawn, public IPossessable, public 
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UEngineAudioComponent* TopLeftEngine;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	USpaceshipWidgetComponent* SpaceshipWidgetComponent;
 
 public:
 	// Sets default values for this pawn's properties
@@ -106,6 +113,9 @@ public:
 
 	UFUNCTION()
 	void UnPossess_Implementation();
+	
+	UFUNCTION()
+	void ToggleContext(APlayerController* PlayerController, UInputMappingContext* MappingContext, bool IsAdding) const;
 
 	UFUNCTION()
 	AActor* GetPossesser_Implementation() { return Possesser; }
@@ -145,6 +155,9 @@ protected:
 
 	UFUNCTION()
 	void OnGravityUpdate(FVector OldGForce, FVector NewGForce);
+	
+	UFUNCTION()
+	void OnAutomaticPilot(bool Active);
 
 	// Suit Interaction
 protected:

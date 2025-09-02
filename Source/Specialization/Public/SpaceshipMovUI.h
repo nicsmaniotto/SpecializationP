@@ -49,6 +49,11 @@ protected:
 	
 	UFUNCTION()
 	void OnAutomaticPilot(bool Active);
+	
+	UFUNCTION()
+	void OnSpaceshipInteraction(bool OnSpaceship);
+
+	void ResetPercentages();
 
 	TMap<EBarPosition, UProgressBar*> BarPositions;
 

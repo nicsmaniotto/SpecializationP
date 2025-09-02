@@ -2,6 +2,7 @@
 
 
 #include "ForcedGravityBound.h"
+#include <Kismet/KismetMathLibrary.h>
 
 void UForcedGravityBound::EnlistComponent(UPrimitiveComponent* OtherComp)
 {
@@ -20,7 +21,10 @@ void UForcedGravityBound::EnlistComponent(UPrimitiveComponent* OtherComp)
 		FVector LinearVelocity = OtherComp->GetPhysicsLinearVelocity();
 		LinearVelocity.Normalize();
 
-		LinearVelocity *= LinearVelocityAdjusted;
+		FVector COG = UKismetMathLibrary::TransformLocation(GetComponentTransform(), CenterOfGravity);
+		FVector Dir = COG - OtherComp->GetComponentLocation();
+
+		LinearVelocity = Dir.GetSafeNormal() * LinearVelocityAdjusted;
 
 		OtherComp->SetPhysicsLinearVelocity(LinearVelocity);
 	}

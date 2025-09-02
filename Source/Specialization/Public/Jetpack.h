@@ -48,6 +48,8 @@ protected:
 
 	EEnergyType FuelConsumptionType;
 
+	virtual FRotator GetDirectionRotation() const override;
+
 public:
 	void SetDependencyComponent(UMarker* MarkerComponent, UEnergyComponent* _EnergyComponent);
 

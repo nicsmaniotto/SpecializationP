@@ -3,6 +3,7 @@
 
 #include "JetpackMenu.h"
 #include "UMG.h"
+#include "FireEngine.h"
 #include "Specialization/SpecializationCharacter.h"
 
 void UJetpackMenu::NativeConstruct()
@@ -16,14 +17,24 @@ void UJetpackMenu::SetupEvents_Implementation(AActor* LinkedActor)
 
 	ASpecializationCharacter* Player = Cast<ASpecializationCharacter>(LinkedActor);
 
-	if (!Player) return;
+	if (Player)
+	{
+		Player->OnJetpackEquip.AddUniqueDynamic(this, &UJetpackMenu::OnJetpackEquip);
+	}
 
-	Player->OnJetpackEquip.AddUniqueDynamic(this, &UJetpackMenu::OnJetpackEquip);
+	UFireEngine* FE = LinkedActor->GetComponentByClass<UFireEngine>();
+
+	if (FE)
+	{
+		FE->OnGravityUpdate.AddUniqueDynamic(this, &UJetpackMenu::OnGravityUpdate);
+	}
 }
 
 void UJetpackMenu::OnJetpackEquip(bool IsEquipped)
 {
 	if (!JetpackContainer) return;
+
+	IsJetpackEquipped = IsEquipped;
 
 	if (AppearAnim)
 	{
@@ -36,4 +47,19 @@ void UJetpackMenu::OnJetpackEquip(bool IsEquipped)
 		PlayAnimationReverse(AppearAnim);
 	}
 
+}
+
+void UJetpackMenu::OnGravityUpdate(FVector OldGravity, FVector NewGravity)
+{
+	if (!IsJetpackEquipped) return;
+
+	if (PropulsionSlider->GetRenderOpacity() == 0 && NewGravity.SquaredLength() > 0)
+	{
+		PlayAnimationForward(PropulsionAppearAnim);
+	}
+
+	if (PropulsionSlider->GetRenderOpacity() > 0 && NewGravity.SquaredLength() == 0)
+	{
+		PlayAnimationReverse(PropulsionAppearAnim);
+	}
 }
