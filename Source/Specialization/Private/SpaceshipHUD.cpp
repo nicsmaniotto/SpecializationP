@@ -5,6 +5,7 @@
 #include "SpaceshipMovUI.h"
 #include "Specialization/SpecializationCharacter.h"
 #include "Components/TextBlock.h"
+#include "Jetpack.h"
 
 void USpaceshipHUD::SetupEvents_Implementation(AActor* LinkedActor)
 {
@@ -19,7 +20,7 @@ void USpaceshipHUD::SetupEvents_Implementation(AActor* LinkedActor)
 
 	if (!Player) return;
 
-	Player->OnJetpackEquip.AddUniqueDynamic(this, &USpaceshipHUD::OnJetpackEquip);
+	Player->GetJetpack()->OnJetpackEquip.AddUniqueDynamic(this, &USpaceshipHUD::OnJetpackEquip);
 }
 
 void USpaceshipHUD::OnJetpackEquip(bool OnJetpack)

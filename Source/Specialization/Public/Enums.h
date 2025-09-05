@@ -80,3 +80,10 @@ enum class ELockType : uint8 {
     NONE = 0 UMETA(DisplayName = "NONE"),
     LOCKED = 1 UMETA(DisplayName = "LOCKED"),
 };
+
+UENUM(BlueprintType)
+enum class EMovType : uint8 {
+    NONE = 0 UMETA(DisplayName = "NONE"),
+    WALK = 1 UMETA(DisplayName = "WALK"),
+    AIR = 2 UMETA(DisplayName = "AIR"),
+};

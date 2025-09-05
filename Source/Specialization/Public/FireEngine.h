@@ -102,7 +102,7 @@ protected:
 
 	bool AirChecker();
 
-	bool IsMoving = false;
+	//bool IsMoving = false;
 
 	FVector GravityForce;
 
@@ -145,6 +145,7 @@ protected:
 
 
 public:
+	virtual void StartMove(const FInputActionValue& Value) {};
 	virtual void Move(const FInputActionValue& Value);
 	virtual void StopMove(const FInputActionValue& Value);
 

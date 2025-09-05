@@ -51,9 +51,6 @@ ASpecializationCharacter::ASpecializationCharacter()
 	//Mesh1P->SetRelativeRotation(FRotator(0.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 
-	/*ConstraintMesh = CreateDefaultSubobject<UStaticMeshComponent>("Constraint Mesh");
-	ConstraintMesh->SetupAttachment(GetCapsuleComponent());*/
-
 	// Create fire engine
 	Jetpack = CreateDefaultSubobject<UJetpack>(TEXT("Jetpack"));
 
@@ -69,6 +66,8 @@ void ASpecializationCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
+	GetCharacterMovement()->SetActive(false);
+
 	// Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -83,6 +82,7 @@ void ASpecializationCharacter::BeginPlay()
 	Jetpack->SetDependencyComponent(MarkerComponent, EnergyComponent);
 
 	Jetpack->OnGravityUpdate.AddUniqueDynamic(this, &ASpecializationCharacter::OnGravityUpdate);
+	Jetpack->OnJetpackEquip.AddUniqueDynamic(this, &ASpecializationCharacter::OnJetpackEquip);
 }
 
 void ASpecializationCharacter::Tick(float DeltaSeconds)
@@ -98,44 +98,6 @@ void ASpecializationCharacter::Tick(float DeltaSeconds)
 	r.Pitch = GetController()->GetControlRotation().Pitch;
 
 	FirstPersonCameraComponent->SetRelativeRotation(r);
-
-	GetCharacterMovement()->SetActive(false);
-
-	// adjust velocity with planet if present
-	APlanet* PlanetSurface = Jetpack->GetPlanetSurface();
-
-	if (PlanetSurface)
-	{
-		if (Jetpack->GetOnAir())
-		{
-			GetCapsuleComponent()->AddForce(
-				(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation())) * (GetCapsuleComponent()->GetLinearDamping()),
-				NAME_None, true);
-		}
-		else if (!IsMoving && !bHasJumped)
-		{
-			GetCapsuleComponent()->SetPhysicsLinearVelocity(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation()), false);
-		}
-	}
-
-
-	if (bHasJumped && Jetpack->GetOnAir())
-	{
-		if (Jetpack->GetGForce().SquaredLength() > 0
-			&& FVector::DotProduct(Jetpack->GetGForce(), GetCapsuleComponent()->GetPhysicsLinearVelocity()) > 0)
-		{
-			if (JumpTopFreedomTimer < JumpTopFreedomTime)
-			{
-				JumpTopFreedomTimer += DeltaSeconds;
-				GetCapsuleComponent()->AddForce(-Jetpack->GetGForce() / JumpTopGravityDivider, NAME_None, true);
-			}
-			else
-			{
-				bHasJumped = false;
-				JumpTopFreedomTimer = 0;
-			}
-		}
-	}
 }
 
 void ASpecializationCharacter::OnGravityUpdate(FVector OldGForce, FVector NewGForce)
@@ -143,20 +105,41 @@ void ASpecializationCharacter::OnGravityUpdate(FVector OldGForce, FVector NewGFo
 	MarkerComponent->ToggleSelf(NewGForce.SquaredLength() == 0);
 }
 
-bool ASpecializationCharacter::ToggleJetpack()
+void ASpecializationCharacter::OnJetpackEquip(bool IsEquipped)
 {
-	bOnJetpack = !bOnJetpack;
-
-	TArray<UMaterial*>* Materials = bOnJetpack ? &JetpackMaterials : &NormalMaterials;
+	TArray<UMaterial*>* Materials = IsEquipped ? &JetpackMaterials : &NormalMaterials;
 
 	for (int i = 0; i < (*Materials).Num(); i++)
 	{
 		Mesh1P->SetMaterial(i, (*Materials)[i]);
 	}
 
-	OnJetpackEquip.Broadcast(bOnJetpack);
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
 
-	return bOnJetpack;
+	if (!PlayerController) return;
+
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+	{
+		if (IsEquipped)
+		{
+			if (!Subsystem->HasMappingContext(JetpackMappingContext))
+			{
+				Subsystem->AddMappingContext(JetpackMappingContext, 0);
+			}
+		}
+		else
+		{
+			if (Subsystem->HasMappingContext(JetpackMappingContext))
+			{
+				Subsystem->RemoveMappingContext(JetpackMappingContext);
+			}
+		}
+	}
+}
+
+bool ASpecializationCharacter::ToggleJetpack()
+{
+	return Jetpack->ToggleJetpack();
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -215,83 +198,19 @@ void ASpecializationCharacter::TogglePhysicality(bool Active)
 
 void ASpecializationCharacter::StartMove(const FInputActionValue& Value)
 {
-	APlanet* PlanetSurface = Jetpack->GetPlanetSurface();
-
-	if (PlanetSurface && !Jetpack->GetOnAir())
-	{
-		FVector DampCompensation = GetCapsuleComponent()->GetPhysicsLinearVelocity() / GetCapsuleComponent()->GetLinearDamping();
-		FVector PlanetForces = PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation());
-
-		//GetCapsuleComponent()->SetPhysicsLinearVelocity(PlanetForces, true);
-
-		GetCapsuleComponent()->AddForce(
-			(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation())) * GetCapsuleComponent()->GetLinearDamping(),
-			NAME_None, true);
-	}
-
+	Jetpack->StartMove(Value);
 }
 
 void ASpecializationCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
-	MovementVector.Normalize();
 
-	if (bOnJetpack && Jetpack->GetOnAir())
-	{
-		IsMoving = false;
-
-		Jetpack->Move(Value);
-		return;
-	}
-
-	if (Controller != nullptr)
-	{
-		// add movement 
-		FVector PlanetVelocity = FVector::ZeroVector;
-
-		APlanet* PlanetSurface = Jetpack->GetPlanetSurface();
-		if (PlanetSurface)
-		{
-			PlanetVelocity = PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(GetCapsuleComponent()->GetComponentLocation());
-		}
-
-		FVector ForVector = GetActorForwardVector();
-
-		FVector RightVector = GetActorRightVector();
-
-		if (Jetpack->GetGForce().SquaredLength() > 0)
-		{
-			ForVector = FVector::VectorPlaneProject(ForVector, -Jetpack->GetGForce().GetSafeNormal()).GetSafeNormal();
-			RightVector = FVector::CrossProduct(-Jetpack->GetGForce().GetSafeNormal(), ForVector);
-		}
-
-		LastMovDirection = (ForVector * MovementVector.Y + RightVector * MovementVector.X).GetSafeNormal();
-
-		ForVector = LastMovDirection * GetCharacterMovement()->MaxWalkSpeed;
-
-		if (!Jetpack->GetOnAir())
-		{
-			ForVector += PlanetVelocity;
-
-			GetCapsuleComponent()->SetPhysicsLinearVelocity(ForVector, false);
-
-			IsMoving = true;
-		}
-		else
-		{
-			if (!!PlanetSurface) GetCapsuleComponent()->AddForce(ForVector * GetCapsuleComponent()->GetLinearDamping(), NAME_None, true);
-		}
-	}
+	Jetpack->Move(Value);
 }
 
 void ASpecializationCharacter::StopMove(const FInputActionValue& Value)
 {
-	if (bOnJetpack) Jetpack->StopMove(Value);
-
-	IsMoving = false;
-
-	LastMovDirection = FVector::ZeroVector;
+	Jetpack->StopMove(Value);
 }
 
 void ASpecializationCharacter::Look(const FInputActionValue& Value)
@@ -362,6 +281,8 @@ void ASpecializationCharacter::Possess_Implementation(APawn* Possesser)
 
 	TogglePhysicality(true);
 
+	OnJetpackEquip(Jetpack->GetIsEquipped());
+
 	OnSpaceshipInteraction.Broadcast(false);
 }
 
@@ -372,6 +293,7 @@ void ASpecializationCharacter::UnPossess_Implementation()
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->RemoveMappingContext(DefaultMappingContext);
+			Subsystem->RemoveMappingContext(JetpackMappingContext);
 		}
 	}
 
@@ -386,42 +308,21 @@ void ASpecializationCharacter::UnPossess_Implementation()
 
 void ASpecializationCharacter::Jump()
 {
-	if (!JumpForceCurve || Jetpack->GetOnAir()) return;
+	if (!Jetpack->Jump()) return;
 
 	Crouch();
-
-	JumpHoldTimer = 0;
 }
 
 void ASpecializationCharacter::JumpOnGoing()
 {
-	if (!JumpForceCurve) return;
-
-	JumpHoldTimer += GetWorld()->GetDeltaSeconds();
+	Jetpack->JumpOnGoing();
 }
 
 void ASpecializationCharacter::StopJumping()
 {
-	if (!JumpForceCurve) return;
+	if (!Jetpack->StopJumping()) return;
 
-	if (JumpHoldTimer > 0)
-	{
-		UnCrouch();
-	}
-
-	if (Jetpack->GetOnAir()) return;
-
-	FVector JumpDir = GetCapsuleComponent()->GetUpVector();
-	if (Jetpack->GetGForce().SquaredLength() > 0)
-	{
-		JumpDir += LastMovDirection * JumpDirectionMultiplier;
-	}
-
-	float ForceToApply = JumpForceCurve->GetFloatValue(JumpHoldTimer);
-
-	GetCapsuleComponent()->AddImpulse(JumpDir.GetSafeNormal() * ForceToApply, NAME_None, true);
-
-	bHasJumped = true;
+	UnCrouch();
 }
 
 void ASpecializationCharacter::Crouch(bool bClientSimulation)
@@ -443,10 +344,7 @@ void ASpecializationCharacter::SetSpaceship()
 
 void ASpecializationCharacter::Throttle(const FInputActionValue& Value)
 {
-	if (bOnJetpack)
-	{
-		Jetpack->Throttle(Value);
-	}
+	Jetpack->Throttle(Value);
 }
 
 void ASpecializationCharacter::EndThrottle(const FInputActionValue& Value)
@@ -456,16 +354,10 @@ void ASpecializationCharacter::EndThrottle(const FInputActionValue& Value)
 
 void ASpecializationCharacter::Reverse(const FInputActionValue& Value)
 {
-	if (bOnJetpack && Jetpack->GetOnAir())
-	{
-		Jetpack->Reverse(Value);
-	}
+	Jetpack->Reverse(Value);
 }
 
 void ASpecializationCharacter::EndReverse(const FInputActionValue& Value)
 {
-	if (bOnJetpack && Jetpack->GetOnAir())
-	{
-		Jetpack->StopReverse(Value);
-	}
+	Jetpack->StopReverse(Value);
 }

@@ -6,6 +6,8 @@
 #include <Kismet/KismetMathLibrary.h>
 #include "Specialization/SpecializationCharacter.h"
 #include "Camera/CameraComponent.h"
+#include "Planet.h"
+#include <InputActionValue.h>
 
 void UJetpack::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
@@ -14,6 +16,10 @@ void UJetpack::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 	HandlePropSpeed(DeltaTime);
 
 	CustomReposition(DeltaTime);
+
+	PositionAdjustment(DeltaTime);
+
+	JumpTick(DeltaTime);
 }
 
 void UJetpack::HandlePropSpeed(float DeltaTime)
@@ -58,6 +64,98 @@ void UJetpack::SetDependencyComponent(UMarker* MarkerComponent, UEnergyComponent
 	EnergyComponent = _EnergyComponent;
 }
 
+void UJetpack::StartMove(const FInputActionValue& Value)
+{
+	Super::StartMove(Value);
+
+	APlanet* PlanetSurface = GetPlanetSurface();
+
+	if (PlanetSurface && !GetOnAir())
+	{
+		FVector DampCompensation = OwnerPhysicsComponent->GetPhysicsLinearVelocity() / OwnerPhysicsComponent->GetLinearDamping();
+		FVector PlanetForces = PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(OwnerPhysicsComponent->GetComponentLocation());
+
+		//GetCapsuleComponent()->SetPhysicsLinearVelocity(PlanetForces, true);
+
+		OwnerPhysicsComponent->AddForce(
+			(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(OwnerPhysicsComponent->GetComponentLocation())) * OwnerPhysicsComponent->GetLinearDamping(),
+			NAME_None, true);
+	}
+}
+
+void UJetpack::Move(const FInputActionValue& Value)
+{
+	FVector2D MovementVector = Value.Get<FVector2D>();
+
+	//if (bOnJetpack && Jetpack->GetOnAir())
+	if (GetOnAir())
+	{
+		MovType = EMovType::AIR;
+
+		OnMovement.Broadcast(MovType);
+
+		Super::Move(Value);
+		return;
+	}
+
+	MovementVector.Normalize();
+
+	// add movement 
+	FVector PlanetVelocity = FVector::ZeroVector;
+
+	APlanet* PlanetSurface = GetPlanetSurface();
+	if (PlanetSurface)
+	{
+		PlanetVelocity = PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(OwnerPhysicsComponent->GetComponentLocation());
+	}
+
+	FVector ForVector = OwnerPhysicsComponent->GetForwardVector();
+
+	FVector RightVector = OwnerPhysicsComponent->GetRightVector();
+
+	if (GetGForce().SquaredLength() > 0)
+	{
+		ForVector = FVector::VectorPlaneProject(ForVector, -GetGForce().GetSafeNormal()).GetSafeNormal();
+		RightVector = FVector::CrossProduct(-GetGForce().GetSafeNormal(), ForVector);
+	}
+
+	LastMovDirection = (ForVector * MovementVector.Y + RightVector * MovementVector.X).GetSafeNormal();
+
+	ForVector = LastMovDirection * MaxWalkSpeed;
+
+	if (!GetOnAir())
+	{
+		ForVector += PlanetVelocity;
+
+		OwnerPhysicsComponent->SetPhysicsLinearVelocity(ForVector, false);
+
+		MovType = EMovType::WALK;
+	}
+	else
+	{
+		if (!!PlanetSurface) OwnerPhysicsComponent->AddForce(ForVector * OwnerPhysicsComponent->GetLinearDamping(), NAME_None, true);
+
+		MovType = EMovType::NONE;
+	}
+
+	OnMovement.Broadcast(MovType);
+}
+
+void UJetpack::StopMove(const FInputActionValue& Value)
+{
+	MovType = EMovType::NONE;
+
+	LastMovDirection = FVector::ZeroVector;
+
+	if (FuelConsumptionType != EEnergyType::NONE)
+	{
+		EnergyComponent->StopConsumeEnergy(FuelConsumptionType);
+	}
+
+	Super::StopMove(Value);
+}
+
+
 bool UJetpack::VerticalMovement(float GravityMultiplier)
 {
 	if (GravityForce != FVector::ZeroVector)
@@ -101,16 +199,6 @@ bool UJetpack::HorizontalMovement(FVector2D LookAxisVector)
 	return false;
 }
 
-void UJetpack::StopMove(const FInputActionValue& Value)
-{
-	if (FuelConsumptionType != EEnergyType::NONE)
-	{
-		EnergyComponent->StopConsumeEnergy(FuelConsumptionType);
-	}
-
-	Super::StopMove(Value);
-}
-
 void UJetpack::Reverse(const FInputActionValue& Value)
 {
 	FuelConsumptionType = EnergyComponent->StartConsumeEnergy(FuelConsumptionMap);
@@ -147,12 +235,13 @@ void UJetpack::AskReposition_Implementation(ERepositionType RepositionType, FVec
 	//if (!OwnerPhysicsComponent->IsSimulatingPhysics()) return;
 	IsForcedReposition = ForceReposition;
 
-	if (IsForcedReposition) Super::AskReposition_Implementation(RepositionType, RepositionTorqueForce, ForceReposition);
+	//if (IsForcedReposition) Super::AskReposition_Implementation(RepositionType, RepositionTorqueForce, ForceReposition);
+	Super::AskReposition_Implementation(RepositionType, RepositionTorqueForce, ForceReposition);
 }
 
 USceneComponent* UJetpack::GetRepositionableComponent_Implementation() const
 {
-	if (!GetOwner()->GetClass()->ImplementsInterface(URepositionable::StaticClass())) return Super::GetRepositionableComponent_Implementation();
+	if (!GetOwner()->GetClass()->ImplementsInterface(URepositionable::StaticClass()) || IsForcedReposition) return Super::GetRepositionableComponent_Implementation();
 
 	USceneComponent* Repositionable = IRepositionable::Execute_GetRepositionableComponent(GetOwner());
 
@@ -172,22 +261,98 @@ void UJetpack::CustomReposition(float DeltaTime)
 	}
 	else
 	{
-		//FVector LookV = FVector::VectorPlaneProject(OwnerPhysicsComponent->GetForwardVector(), -GravityForce.GetSafeNormal()).GetSafeNormal();
-		//FVector RightVec = -FVector::CrossProduct(LookV, -GravityForce.GetSafeNormal());
-		////FVector UpCorrected = FVector::CrossProduct(LookV, RightVec);
-
-		//FMatrix LookAtMatrix;
-		//LookAtMatrix.SetAxis(0, LookV);
-		//LookAtMatrix.SetAxis(1, RightVec);
-		//LookAtMatrix.SetAxis(2, -GravityForce.GetSafeNormal());
-
 		NextRotation = GetDirectionRotation();
 	}
 
 	FRotator r = UKismetMathLibrary::RLerp(Repositionable->GetComponentRotation(), NextRotation, DeltaTime * CustomRepositionLerpSpeed, true);
 
-	/*DrawDebugLine(GetWorld(), Repositionable->GetComponentLocation(), Repositionable->GetComponentLocation() + LookV * 100, FColor::Emerald, false, .1f);
-	DrawDebugLine(GetWorld(), Repositionable->GetComponentLocation(), Repositionable->GetComponentLocation() + RightVec * 100, FColor::Red, false, .1f);*/
-
 	Repositionable->SetWorldRotation(r, false, nullptr, ETeleportType::TeleportPhysics);
+}
+
+void UJetpack::PositionAdjustment(float DeltaTime)
+{
+	APlanet* PlanetSurface = GetPlanetSurface();
+
+	if (PlanetSurface)
+	{
+		if (GetOnAir())
+		{
+			OwnerPhysicsComponent->AddForce(
+				(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(OwnerPhysicsComponent->GetComponentLocation())) * (OwnerPhysicsComponent->GetLinearDamping()),
+				NAME_None, true);
+		}
+		//else if (MovType != EMovType::WALK && !bHasJumped)
+		//{
+		//	//OwnerPhysicsComponent->SetPhysicsLinearVelocity(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(OwnerPhysicsComponent->GetComponentLocation()), false);
+		//}
+	}
+}
+
+void UJetpack::JumpTick(float DeltaTime)
+{
+	if (bHasJumped && GetOnAir())
+	{
+		if (GetGForce().SquaredLength() > 0
+			&& FVector::DotProduct(GetGForce(), OwnerPhysicsComponent->GetPhysicsLinearVelocity()) > 0)
+		{
+			if (JumpTopFreedomTimer < JumpTopFreedomTime)
+			{
+				JumpTopFreedomTimer += DeltaTime;
+				OwnerPhysicsComponent->AddForce(-GetGForce() / JumpTopGravityDivider, NAME_None, true);
+			}
+			else
+			{
+				bHasJumped = false;
+				JumpTopFreedomTimer = 0;
+			}
+		}
+	}
+}
+
+bool UJetpack::Jump()
+{
+	if (!JumpForceCurve || GetOnAir()) return false;
+
+	JumpHoldTimer = 0;
+
+	return true;
+}
+
+bool UJetpack::JumpOnGoing()
+{
+	if (!JumpForceCurve || GetOnAir()) return false;
+
+	JumpHoldTimer += GetWorld()->GetDeltaSeconds();
+
+	return true;
+}
+
+bool UJetpack::StopJumping()
+{
+	if (!JumpForceCurve) return false;
+	if (JumpHoldTimer <= 0) return false;
+	if (GetOnAir()) return false;
+
+	FVector JumpDir = OwnerPhysicsComponent->GetUpVector();
+	if (GetGForce().SquaredLength() > 0)
+	{
+		JumpDir += LastMovDirection * JumpDirectionMultiplier;
+	}
+
+	float ForceToApply = JumpForceCurve->GetFloatValue(JumpHoldTimer);
+
+	OwnerPhysicsComponent->AddImpulse(JumpDir.GetSafeNormal() * ForceToApply, NAME_None, true);
+
+	bHasJumped = true;
+
+	return true;
+}
+
+bool UJetpack::ToggleJetpack()
+{
+	bOnJetpack = !bOnJetpack;
+
+	OnJetpackEquip.Broadcast(bOnJetpack);
+
+	return bOnJetpack;
 }

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/CapsuleComponent.h"
+#include "Enums.h"
 #include "GravityBound.generated.h"
 
 class UCurveFloat;
@@ -64,6 +65,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")
 	bool bReverseAlignmentDir = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")
+	bool bFaceDir = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")
+	TArray<ERepositionType> AllowedRepositionTypes = { ERepositionType::FORWARD, ERepositionType::RIGHT };
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")
 	bool HasAtmoVelChange = true;

@@ -4,6 +4,7 @@
 #include "JetpackMenu.h"
 #include "UMG.h"
 #include "FireEngine.h"
+#include "Jetpack.h"
 #include "Specialization/SpecializationCharacter.h"
 
 void UJetpackMenu::NativeConstruct()
@@ -19,7 +20,7 @@ void UJetpackMenu::SetupEvents_Implementation(AActor* LinkedActor)
 
 	if (Player)
 	{
-		Player->OnJetpackEquip.AddUniqueDynamic(this, &UJetpackMenu::OnJetpackEquip);
+		Player->GetJetpack()->OnJetpackEquip.AddUniqueDynamic(this, &UJetpackMenu::OnJetpackEquip);
 	}
 
 	UFireEngine* FE = LinkedActor->GetComponentByClass<UFireEngine>();

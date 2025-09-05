@@ -11,6 +11,7 @@
 UGravityBound::UGravityBound()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	SetTickGroup(ETickingGroup::TG_PostPhysics);
 }
 
 void UGravityBound::BeginPlay()
@@ -116,9 +117,11 @@ FVector UGravityBound::ExecuteGravity(UPrimitiveComponent* PrimitiveComponent, U
 
 void UGravityBound::AskAlignement(USceneComponent* PrimitiveComponent, UFireEngine* FireEngine, FVector Dir)
 {
-	if (!FireEngine) return;
+	if (!FireEngine || AllowedRepositionTypes.Num() == 0) return;
 
 	if (bReverseAlignmentDir) Dir *= -1;
+
+	if (bFaceDir) Dir = -FVector::VectorPlaneProject(PrimitiveComponent->GetUpVector(), -Dir);
 
 	FVector RefAxisForward = FVector::VectorPlaneProject(PrimitiveComponent->GetForwardVector(), -Dir);
 
@@ -132,7 +135,7 @@ void UGravityBound::AskAlignement(USceneComponent* PrimitiveComponent, UFireEngi
 
 	if (1 - FVector::DotProduct(-Dir, PrimitiveComponent->GetUpVector()) > .02f)
 	{
-		if (FVector::CrossProduct(RefAxisForward, PrimitiveComponent->GetForwardVector()).SquaredLength() > FMath::Square(.02f))
+		if (AllowedRepositionTypes.Contains(ERepositionType::RIGHT) && FVector::CrossProduct(RefAxisForward, PrimitiveComponent->GetForwardVector()).SquaredLength() > FMath::Square(.02f))
 		{
 			if (FVector::DotProduct(PrimitiveComponent->GetForwardVector(), -Dir) > 0)
 			{
@@ -146,7 +149,7 @@ void UGravityBound::AskAlignement(USceneComponent* PrimitiveComponent, UFireEngi
 			IRepositionable::Execute_AskReposition(FireEngine, ERepositionType::RIGHT, TorqueVector * RedirectionForce, ForceReposition);
 		}
 
-		if (FVector::CrossProduct(RefAxisRight, PrimitiveComponent->GetRightVector()).SquaredLength() > FMath::Square(.02f))
+		if (AllowedRepositionTypes.Contains(ERepositionType::FORWARD) && FVector::CrossProduct(RefAxisRight, PrimitiveComponent->GetRightVector()).SquaredLength() > FMath::Square(.02f))
 		{
 			if (FVector::DotProduct(PrimitiveComponent->GetRightVector(), -Dir) > 0)
 			{

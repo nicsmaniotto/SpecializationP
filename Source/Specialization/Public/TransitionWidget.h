@@ -26,6 +26,9 @@ protected:
 	void NativeConstruct() override;
 
 	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> InitialFadeOut;
+	
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
 	TObjectPtr<UWidgetAnimation> FadeIn;
 
 	UPROPERTY(Transient, meta = (BindWidgetAnim))

@@ -93,7 +93,7 @@ bool UFireEngine::AirChecker()
 	/*UKismetSystemLibrary::SphereOverlapComponents(GetWorld(), Loc, AirCheckRadius,
 		{ EObjectTypeQuery::ObjectTypeQuery1 }, UStaticMeshComponent::StaticClass(), { GetOwner() }, Hits);*/
 
-	//DrawDebugSphere(GetWorld(), Loc, AirCheckRadius, 32, FColor::Emerald, false, .01f);
+		//DrawDebugSphere(GetWorld(), Loc, AirCheckRadius, 32, FColor::Emerald, false, .01f);
 
 	return !SurfaceHit.bBlockingHit;
 }
@@ -129,21 +129,21 @@ void UFireEngine::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 
 void UFireEngine::Move(const FInputActionValue& Value)
 {
+	FVector2D MovementVector = Value.Get<FVector2D>();
+
 	if (IsAutomatic) return;
 
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
 	//LookAxisVector.Normalize();
 
-	if (HorizontalMovement(LookAxisVector))
+	if (HorizontalMovement(MovementVector))
 	{
-		IsMoving = true;
+		//IsMoving = true;
 	}
+
 }
 
 void UFireEngine::StopMove(const FInputActionValue& Value)
 {
-	IsMoving = false;
-
 	if (OnLateralMovement.IsBound()) OnLateralMovement.Broadcast(FVector::ZeroVector, 0, OwnerPhysicsComponent->GetComponentTransform());
 }
 
@@ -169,7 +169,7 @@ void UFireEngine::EndThrottle(const FInputActionValue& Value)
 
 void UFireEngine::Reverse(const FInputActionValue& Value)
 {
-	if (IsAutomatic) return;
+	if (IsAutomatic || !GetOnAir()) return;
 
 	if (IsThrottling)
 	{
@@ -315,7 +315,7 @@ void UFireEngine::ToggleAutomaticPilot(bool Active)
 
 	IsAutomatic = Active;
 
-	if(OnAutomaticPilot.IsBound()) OnAutomaticPilot.Broadcast(IsAutomatic);
+	if (OnAutomaticPilot.IsBound()) OnAutomaticPilot.Broadcast(IsAutomatic);
 
 	if (!Active)
 	{
@@ -354,7 +354,7 @@ void UFireEngine::AutomaticPilotMovement()
 	RelativeDir.Normalize();
 
 	FVector2D XYForce = FVector2D(RelativeDir.Y, RelativeDir.X);
-	
+
 	float TempDistToStop = (PhysicsVelocity.SquaredLength() * OwnerPhysicsComponent->GetLinearDamping()) / (2.35f * (ApproachForces.GetSafeNormal() * MoveForce).SquaredLength());
 
 	if (!IsRetroFireActivated && FVector::DotProduct(PhysicsVelocity, ApproachForces) > 0 && FMath::Square(TempDistToStop) >= ApproachForces.SquaredLength())

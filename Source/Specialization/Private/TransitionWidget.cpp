@@ -16,6 +16,8 @@ void UTransitionWidget::NativeConstruct()
 	FadeOutCompletion.BindDynamic(this, &UTransitionWidget::OnFadeOutCompleted);
 
 	BindToAnimationFinished(FadeOut, FadeOutCompletion);
+
+	PlayAnimationForward(InitialFadeOut);
 }
 
 void UTransitionWidget::MakeFadeOut()
