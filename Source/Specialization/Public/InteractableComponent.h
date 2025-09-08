@@ -10,7 +10,10 @@
 class ASpecializationCharacter;
 
 /**
- * 
+ * @see interface IInteractable
+ * This capsule component detects the player and stores its reference in him.
+ * Thus the player will interact with this component and this component will
+ * call the interact function of the IInteractable implemented objects he found linked to itself (owner or brother components).
  */
 UCLASS(ClassGroup = "Collision", editinlinenew, hidecategories = (Object, LOD, Lighting, TextureStreaming), meta = (DisplayName = "Interactable Component", BlueprintSpawnableComponent))
 class SPECIALIZATION_API UInteractableComponent : public UCapsuleComponent, public IInteractable
@@ -20,6 +23,7 @@ class SPECIALIZATION_API UInteractableComponent : public UCapsuleComponent, publ
 protected:
 	void BeginPlay() override;
 
+	/*Fill InteractObjects with IInteractable implemented objects linked to this component*/
 	void FillInteractComponents();
 
 	UFUNCTION()
@@ -28,6 +32,7 @@ protected:
 	UFUNCTION()
 	void OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	UPROPERTY(BlueprintReadOnly)
 	ASpecializationCharacter* Player;
 
 	UPROPERTY()

@@ -12,7 +12,9 @@ class UMarker;
 class UMarkerWidget;
 
 /**
- *
+ * Widget component which manages:
+ *	- visualization of the marker/lock
+ *  - calculation of approach forces for automatic pilot
  */
 UCLASS(Blueprintable, ClassGroup = "UserInterface", hidecategories = (Object, Activation, "Components|Activation", Sockets, Base, Lighting, LOD, Mesh), editinlinenew, meta = (BlueprintSpawnableComponent))
 class SPECIALIZATION_API UMarkingComponent : public UWidgetComponent
@@ -31,6 +33,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	TScriptInterface<IMarkable> MarkableObj;
 
+	/* How far from the object center should the approach forces be calculated?*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marker")
 	float ApproachDist = 100000;
 

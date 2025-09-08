@@ -36,15 +36,19 @@ struct FEnergyInfo
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     EEnergyType EnergyType = EEnergyType::NONE;
 
+    /*Passive growth value */
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float GrowthValue = 0;
     
+    /*Hard/Forced use growth value */
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float HardGrowthValue = .8f;
 
+    /*Normal use growth value */
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float DecayValue = .2f;
     
+    /*Hard/Forced use growth value*/
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float HardDecayValue = .8f;
 };

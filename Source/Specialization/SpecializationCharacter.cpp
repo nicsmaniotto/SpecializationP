@@ -1,7 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "SpecializationCharacter.h"
-#include "SpecializationProjectile.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -27,9 +26,6 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 ASpecializationCharacter::ASpecializationCharacter()
 {
-	// Character doesnt have a rifle at start
-	bHasRifle = false;
-
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 
@@ -108,6 +104,8 @@ void ASpecializationCharacter::OnGravityUpdate(FVector OldGForce, FVector NewGFo
 void ASpecializationCharacter::OnJetpackEquip(bool IsEquipped)
 {
 	TArray<UMaterial*>* Materials = IsEquipped ? &JetpackMaterials : &NormalMaterials;
+
+	if (!Materials) return;
 
 	for (int i = 0; i < (*Materials).Num(); i++)
 	{
@@ -256,16 +254,6 @@ void ASpecializationCharacter::AutomaticPilot(const FInputActionValue& Value)
 		Jetpack->ToggleAutomaticPilot(true);
 	}
 
-}
-
-void ASpecializationCharacter::SetHasRifle(bool bNewHasRifle)
-{
-	bHasRifle = bNewHasRifle;
-}
-
-bool ASpecializationCharacter::GetHasRifle()
-{
-	return bHasRifle;
 }
 
 void ASpecializationCharacter::Possess_Implementation(APawn* Possesser)

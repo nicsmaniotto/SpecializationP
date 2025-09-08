@@ -7,7 +7,8 @@
 #include "BlackHole.generated.h"
 
 /**
- * 
+ * Black hole implementation.
+ * A white hole ref is needed to teleport to the linked location.
  */
 UCLASS()
 class SPECIALIZATION_API ABlackHole : public AHole

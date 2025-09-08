@@ -11,12 +11,14 @@ void UAtmoFeedback::BeginPlay()
 
 	UFireEngine* FE = GetOwner()->GetComponentByClass<UFireEngine>();
 
+	/*Check whether the owner presents the fire engine component*/
 	if (!FE)
 	{
 		DestroyComponent();
 		return;
 	}
 
+	/*Links to the atmosphere force*/
 	FE->OnAtmoForce.AddUniqueDynamic(this, &UAtmoFeedback::AdjustSelf);
 
 	DynamicMaterial = CreateDynamicMaterialInstance(0, SourceMaterial);
@@ -35,13 +37,14 @@ void UAtmoFeedback::AdjustSelf(FVector Dir, float Magnitude)
 
 	if (Magnitude == 0) return;
 
-	// adjust intensity
+	// adjust intensity to match the magnitude
 	float Val = VelocityCurve->GetFloatValue(Magnitude);
 	DynamicMaterial->SetScalarParameterValue(ScalarParameterName, Val);
 
-	GEngine->AddOnScreenDebugMessage(-1, .1, FColor::White, FString::Printf(TEXT("Value: %f"), Val));
+	//// debug
+	//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::White, FString::Printf(TEXT("Value: %f"), Val));
 
-	// adjust direction
+	// adjust direction to face the atmosphere force
 	FRotator r = UKismetMathLibrary::FindLookAtRotation(GetComponentLocation(), GetComponentLocation() + Dir);
 
 	SetWorldRotation(r);

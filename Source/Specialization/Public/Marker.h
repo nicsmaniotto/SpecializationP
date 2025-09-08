@@ -12,7 +12,12 @@ class APlayerController;
 UDELEGATE()
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLock, bool, IsLocking);
 
-
+/*
+* @See class MarkingComponent
+* @See interface IMarkable
+* Component used to check markable components along the way.
+* Once found it can be locked and used for automatic pilot if possible.
+*/
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class SPECIALIZATION_API UMarker : public UActorComponent
 {
@@ -25,9 +30,6 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Marker")
-	float DotMinThreshold = .9f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Marker")
 	float CheckDistance = 2000000;

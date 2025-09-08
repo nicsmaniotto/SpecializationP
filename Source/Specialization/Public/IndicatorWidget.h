@@ -7,7 +7,8 @@
 #include "IndicatorWidget.generated.h"
 
 /**
- * 
+ * @see class MarkerWidget
+ * Visual indicators of approach forces used by a fire engine automatic pilot
  */
 UCLASS()
 class SPECIALIZATION_API UIndicatorWidget : public UUserWidget

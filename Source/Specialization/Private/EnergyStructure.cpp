@@ -23,6 +23,8 @@ void UEnergyStructure::Init(
 
 void UEnergyStructure::Update(float DeltaSeconds)
 {
+	if (Energy == TargetEnergy) return;
+
 	float UpdateSpeed = IsHardUpdating ? HardGrowthValue : GrowthValue;
 
 	if (TargetEnergy == 0)
@@ -33,11 +35,14 @@ void UEnergyStructure::Update(float DeltaSeconds)
 	float OldEnergy = Energy;
 	Energy = UKismetMathLibrary::FInterpTo_Constant(Energy, TargetEnergy, DeltaSeconds, UpdateSpeed);
 
-	if (Type != EEnergyType::FUEL) GEngine->AddOnScreenDebugMessage(-1, .01f, FColor::Emerald, FString::Printf(TEXT("Velocity: %f - Value: %f"), UpdateSpeed, Energy));
-
 	if (Energy > 0)
 	{
 		OnUpdate.ExecuteIfBound(Type, OldEnergy, Energy);
+
+		if (Energy == 1)
+		{
+			ToggleRestoreEnergy(false);
+		}
 	}
 	else
 	{
@@ -75,9 +80,9 @@ void UEnergyStructure::StopConsumeEnergy()
 	TargetEnergy = 1;
 }
 
-void UEnergyStructure::ToggleRestoreEnergy(bool Active)
+void UEnergyStructure::ToggleRestoreEnergy(bool IsHardUpdate)
 {
-	IsHardUpdating = Active;
+	IsHardUpdating = IsHardUpdate;
 
 	TargetEnergy = 1;
 }

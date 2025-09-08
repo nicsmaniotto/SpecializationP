@@ -27,29 +27,33 @@ protected:
 	void BeginPlay() override;
 
 protected:
+	/*class of the player HUD*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
 	TSubclassOf<UBaseMenu> BaseHUDWidgetClass;
 	
+	/*class of the spaceship HUD*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HUD")
 	TSubclassOf<UBaseMenu> ShipHUDWidgetClass;
 	
+	/*class of the interaction widget: shared by all interactables*/
+	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
+	UInteraction* InteractionWidget;
+
+	/*class of the transition widget*/
+	UPROPERTY(EditDefaultsOnly, Category = "Transition")
+	TSubclassOf<UTransitionWidget> TransitionWidgetClass;
+
 	UPROPERTY(BlueprintReadOnly, Category = "HUD")
 	UBaseMenu* BaseHUDWidget;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "HUD")
 	UBaseMenu* ShipHUDWidget;
 	
-	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
-	UInteraction* InteractionWidget;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
 	TSubclassOf<UInteraction> InteractionWidgetClass;
-	
+
 	UPROPERTY(BlueprintReadOnly, Category = "Transition")
 	UTransitionWidget* TransitionWidget;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Transition")
-	TSubclassOf<UTransitionWidget> TransitionWidgetClass;
 
 	TMap<UUserWidget*, int> StackableWidgets;
 
@@ -63,9 +67,16 @@ protected:
 	FOnTransitionEnd OnTransitionEnd;
 
 public:
+	/* Manages the visualization of the desired widget according to the type specified. Use ExecuteTransition if you want to use the transition widget with custom events!*/
 	UFUNCTION(BlueprintCallable)
 	bool AskToggleWidget(bool Active, EWidgetType Type, TSubclassOf<class UUserWidget> CustomWidget = nullptr);
 	
+	/*
+	* Manages the transition widget.
+	* _OnTransition: mid-transition delegate,
+	* _OnTransitionEnd: end-transition delegate,
+	* returns if transition was executed successfully
+	*/
 	bool ExecuteTransition(FOnTransition _OnTransition, FOnTransitionEnd _OnTransitionEnd);
 
 // Player

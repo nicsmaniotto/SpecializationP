@@ -263,27 +263,27 @@ void ASpaceship::StopMove(const FInputActionValue& Value)
 
 void ASpaceship::Throttle(const FInputActionValue& Value)
 {
-	FireEngine->Throttle(Value);
+	if (Controller != nullptr) FireEngine->Throttle(Value);
 }
 
 void ASpaceship::EndThrottle(const FInputActionValue& Value)
 {
-	FireEngine->EndThrottle(Value);
+	if (Controller != nullptr) FireEngine->EndThrottle(Value);
 }
 
 void ASpaceship::Reverse(const FInputActionValue& Value)
 {
-	FireEngine->Reverse(Value);
+	if (Controller != nullptr) FireEngine->Reverse(Value);
 }
 
 void ASpaceship::EndReverse(const FInputActionValue& Value)
 {
-	FireEngine->StopReverse(Value);
+	if (Controller != nullptr) FireEngine->StopReverse(Value);
 }
 
 void ASpaceship::StartLook(const FInputActionValue& Value)
 {
-	FireEngine->StartLook(Value);
+	if (Controller != nullptr) FireEngine->StartLook(Value);
 }
 
 void ASpaceship::Look(const FInputActionValue& Value)
@@ -295,5 +295,5 @@ void ASpaceship::Look(const FInputActionValue& Value)
 
 void ASpaceship::StopLook(const FInputActionValue& Value)
 {
-	FireEngine->StopLook(Value);
+	if (Controller != nullptr) FireEngine->StopLook(Value);
 }

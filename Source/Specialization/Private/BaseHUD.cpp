@@ -6,6 +6,7 @@
 #include <Marker.h>
 #include <Specialization/SpecializationGameMode.h>
 
+/*setups events*/
 void UBaseHUD::SetupEvents_Implementation(AActor* LinkedActor)
 {
 	if (!LinkedActor) return;
@@ -29,8 +30,10 @@ void UBaseHUD::SetupEvents_Implementation(AActor* LinkedActor)
 
 void UBaseHUD::OnGravityUpdate(FVector OldGravity, FVector NewGravity)
 {
+	/*Hide/show automatic pilot availability based on current gravity*/
 	AutomaticPilotContainer->SetVisibility(NewGravity.SquaredLength() == 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 
+	/*Refine gravity text to first decimal*/
 	float GravityLength = NewGravity.Length() / ASpecializationGameMode::GRAVITYMULTIPLIER;
 
 	float Decimals = GravityLength - (int)GravityLength;

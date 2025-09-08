@@ -15,6 +15,12 @@ class UEngineAudioComponent;
 class USpaceshipWidgetComponent;
 struct FInputActionValue;
 
+
+/**
+* Spaceship class.
+* Can be possessed to drive the spaceship.
+* It redirects its input to the fire engine to fly.
+*/
 UCLASS()
 class SPECIALIZATION_API ASpaceship : public APawn, public IPossessable, public IInteractable
 {
@@ -39,10 +45,11 @@ class SPECIALIZATION_API ASpaceship : public APawn, public IPossessable, public 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ReverseAction;
 
-	/** MappingContext */
+	/** Always active mapping context  when possessed*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputMappingContext* SpaceshipMappingContext;
 	
+	/** Active mapping context  when possessed and not on automatic pilot*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputMappingContext* SpaceshipManualMappingContext;
 
@@ -99,8 +106,6 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	APawn* Possesser;
-
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -108,6 +113,8 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	// Possession
+public:
 	UFUNCTION()
 	void Possess_Implementation(APawn* _Possesser);
 
@@ -122,11 +129,16 @@ public:
 	
 	void Interact_Implementation(ASpecializationCharacter* Player) override;
 
+protected:
 	UFUNCTION()
 	void OnPossessMidTransition(ASpecializationCharacter* Player);
 	
 	UFUNCTION()
 	void OnUnPossessMidTransition();
+	
+	/*Should be player!!*/
+	UPROPERTY(BlueprintReadOnly, Category = "Possesser")
+	APawn* Possesser;
 
 	// Movement
 protected:
@@ -147,16 +159,19 @@ protected:
 	void StartInteract(const FInputActionValue& Value);
 	void StopInteract(const FInputActionValue& Value);
 
-	/*Automatic pilot*/
-
+	//Automatic pilot
+protected:
 	/** Called for mark/automatic pilot input */
 	void LockObject(const FInputActionValue& Value);
+
+	/*Toggle pilot logic*/
 	void AutomaticPilot(const FInputActionValue& Value);
 
 	UFUNCTION()
 	void OnGravityUpdate(FVector OldGForce, FVector NewGForce);
 	
-	UFUNCTION()
+	/*Remove manual mapping context if on automatic pilot*/
+	UFUNCTION(BlueprintCallable, meta = (BlueprintProtected))
 	void OnAutomaticPilot(bool Active);
 
 	// Suit Interaction

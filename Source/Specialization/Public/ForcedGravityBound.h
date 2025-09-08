@@ -7,7 +7,10 @@
 #include "ForcedGravityBound.generated.h"
 
 /**
- * 
+ * Child of GravityBound class.
+ * It is a custom gravity area inside an outer gravity area.
+ * It executes a custom forced force to actor inside it detaching from
+ * outer gravity areas.
  */
 UCLASS(Blueprintable, BlueprintType, editinlinenew, hidecategories = (Object, LOD, Lighting, TextureStreaming), meta = (DisplayName = "Forced Gravity Bound", BlueprintSpawnableComponent))
 class SPECIALIZATION_API UForcedGravityBound : public UGravityBound

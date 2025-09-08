@@ -12,7 +12,8 @@ class UCanvasPanel;
 class URadialSlider;
 
 /**
- * 
+* @see class BaseMenu
+ * Player HUD
  */
 UCLASS()
 class SPECIALIZATION_API UJetpackMenu : public UBaseMenu
@@ -22,12 +23,10 @@ class SPECIALIZATION_API UJetpackMenu : public UBaseMenu
 protected:
 	void NativeConstruct() override;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Base", meta = (BindWidget))
-	UCanvasPanel* JetpackContainer;
-
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetAnim), Transient)
 	UWidgetAnimation* AppearAnim;
 	
+	/*Slider of the jetpack propulsion*/
 	UPROPERTY(BlueprintReadOnly, Category = "Base", meta = (BindWidget))
 	UWidget* PropulsionSlider;
 
@@ -38,7 +37,7 @@ protected:
 	void OnJetpackEquip(bool IsEquipped);
 
 	UFUNCTION()
-	void OnGravityUpdate(FVector OldGravity, FVector NewGravity);
+	void OnAtmosphereUpdate(class APlanet* Planet);
 
 	bool IsJetpackEquipped;
 

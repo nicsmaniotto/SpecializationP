@@ -7,7 +7,7 @@
 #include "SpaceshipWidgetComponent.generated.h"
 
 /**
- * 
+ * Widget component applied to spaceship in order for the player to be aware of the spaceship position
  */
 UCLASS()
 class SPECIALIZATION_API USpaceshipWidgetComponent : public UWidgetComponent
@@ -21,6 +21,7 @@ protected:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	/*Distance from the player within he does not see this widget*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SpaceshipWidget")
 	float CloseDistance = 3000;
 

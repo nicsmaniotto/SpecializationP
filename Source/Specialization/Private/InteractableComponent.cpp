@@ -24,8 +24,6 @@ void UInteractableComponent::FillInteractComponents()
 		InteractObjects.Add(Owner);
 	}
 
-	//TArray<UActorComponent*> Children = Owner->GetComponentsByInterface(UInteractable::StaticClass());
-
 	InteractObjects.Append(Owner->GetComponentsByInterface(UInteractable::StaticClass()));
 
 	InteractObjects.Remove(this);

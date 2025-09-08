@@ -15,7 +15,7 @@ UDELEGATE()
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCompletedTransition);
 
 /**
- * 
+ * Transition widget 
  */
 UCLASS()
 class SPECIALIZATION_API UTransitionWidget : public UUserWidget

@@ -14,5 +14,6 @@ void ABlackHole::OnBeginOverlap_Implementation(
 {
 	if (!LinkedWhiteHole || !OtherComp->IsSimulatingPhysics()) return;
 
-	OtherActor->SetActorLocation(LinkedWhiteHole->GetRepositionLocation(), false, nullptr, ETeleportType::TeleportPhysics);
+	/*teleports to linked location*/
+	OtherActor->SetActorLocationAndRotation(LinkedWhiteHole->GetRepositionTransform().GetLocation(), LinkedWhiteHole->GetRepositionTransform().GetRotation(), false, nullptr, ETeleportType::TeleportPhysics);
 }

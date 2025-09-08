@@ -54,6 +54,7 @@ void APlanet::BeginPlay()
 
 void APlanet::SetupChildren()
 {
+	// gets all attached actors and attach them to the moving mesh
 	TArray<AActor*> Out;
 	GetAttachedActors(Out, true, true);
 
@@ -82,9 +83,9 @@ void APlanet::Tick(float DeltaTime)
 	OrbitFollow(DeltaTime);
 }
 
-FVector APlanet::GetDeltaVelocity() const
+FVector APlanet::GetDeltaVelocity(FVector Location) const
 {
-	return Mesh->GetPhysicsLinearVelocity();
+	return Mesh->GetPhysicsLinearVelocityAtPoint(Location);
 }
 
 FVector APlanet::GetDeltaAngForce(FVector Location) const

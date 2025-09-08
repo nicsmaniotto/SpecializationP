@@ -8,8 +8,6 @@
 UMarkingComponent::UMarkingComponent()
 {
 	SetVisibility(false);
-
-	//PrimaryComponentTick.bCanEverTick = false;
 }
 
 void UMarkingComponent::BeginPlay()
@@ -56,6 +54,7 @@ FVector UMarkingComponent::CalcApproachForces()
 	FVector Dir = MO->GetComponentLocation() - MarkerObj->GetSelfTransform().GetLocation();
 	Dir.Normalize();
 
+	// Add component velocity to compensate the real time movement
 	FVector FinalLoc = MO->GetComponentLocation() - Dir * ApproachDist + MO->GetComponentVelocity();
 	DrawDebugSphere(GetWorld(), FinalLoc, 500, 12, FColor::Red, false, .1f);
 
@@ -73,23 +72,9 @@ void UMarkingComponent::ToggleVisualLock(bool Active)
 
 void UMarkingComponent::ToggleLock(UMarker* Marker)
 {
-	//PrimaryComponentTick.bCanEverTick = !!Marker;
-
 	CurrentLockType = !!Marker ? ELockType::LOCKED : ELockType::NONE;
 
 	MarkerWidget->ChangeBehavior(CurrentLockType);
 
-	/*if (Active)
-	{
-	}
-	else
-	{
-
-	}*/
-
 	MarkerObj = Marker;
-
-	if (!MarkerObj) return;
-
-	// ... on marker change
 }

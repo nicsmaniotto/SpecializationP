@@ -35,7 +35,6 @@ void UGravityBound::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 void UGravityBound::EnlistComponent(UPrimitiveComponent* OtherComp)
 {
 	if (Overlaps.Contains(OtherComp)) return;
-	//if (!OtherComp->IsSimulatingPhysics()) return;
 
 	Overlaps.Add(OtherComp);
 
@@ -50,7 +49,6 @@ void UGravityBound::EnlistComponent(UPrimitiveComponent* OtherComp)
 void UGravityBound::UnenlistComponent(UPrimitiveComponent* OtherComp)
 {
 	if (!Overlaps.Contains(OtherComp)) return;
-	//if (!Forced && !OtherComp->IsSimulatingPhysics()) return;
 
 	Overlaps.Remove(OtherComp);
 
@@ -81,9 +79,14 @@ void UGravityBound::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 		// Execute Gravity
 		FVector Dir = ExecuteGravity(P, FireEngine);
 
-		if(FireEngine) AskAlignement(IRepositionable::Execute_GetRepositionableComponent(FireEngine), FireEngine, Dir);
-
+		// Liminal atmosphere behavior
 		AtmosphereVelChange(P, FireEngine, Dir);
+
+		if (FireEngine)
+		{
+			// Alignment force
+			AskAlignement(IRepositionable::Execute_GetRepositionableComponent(FireEngine), FireEngine, Dir);
+		}
 	}
 }
 
@@ -129,6 +132,7 @@ void UGravityBound::AskAlignement(USceneComponent* PrimitiveComponent, UFireEngi
 
 	FVector TorqueVector = FVector::ZeroVector;
 
+	// DEBUG
 	/*DrawDebugLine(GetWorld(), PrimitiveComponent->GetComponentLocation(), PrimitiveComponent->GetComponentLocation() + PrimitiveComponent->GetRightVector() * 200, FColor::Green, false, .1f);
 	DrawDebugLine(GetWorld(), PrimitiveComponent->GetComponentLocation(), PrimitiveComponent->GetComponentLocation() + RefAxisForward * 200, FColor::Red, false, .1f);
 	DrawDebugLine(GetWorld(), PrimitiveComponent->GetComponentLocation(), PrimitiveComponent->GetComponentLocation() + -Dir * 200, FColor::Blue, false, .1f);*/
@@ -163,7 +167,6 @@ void UGravityBound::AskAlignement(USceneComponent* PrimitiveComponent, UFireEngi
 			IRepositionable::Execute_AskReposition(FireEngine, ERepositionType::FORWARD, TorqueVector * RedirectionForce, ForceReposition);
 		}
 
-		//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Dist: %f - Force: %f - Dot: %f "), Dist, GravityForce, FVector::CrossProduct(RefAxisRight, P->GetRightVector()).Length(), .05f));
 	}
 	else
 	{
@@ -180,11 +183,9 @@ void UGravityBound::AtmosphereVelChange(UPrimitiveComponent* PrimitiveComponent,
 
 	TArray<FHitResult> Hits;
 
-	if (ShowAtmoInner)
-	{
-		UKismetSystemLibrary::SphereTraceMultiForObjects(GetWorld(), Start, End, AtmoCheckRadius, { UEngineTypes::ConvertToObjectType(ECC_PhysicsBody) },
-			false, { GetOwner() }, EDrawDebugTrace::ForOneFrame, Hits, true, FLinearColor::Yellow, FLinearColor::Yellow);
-	}
+	UKismetSystemLibrary::SphereTraceMultiForObjects(GetWorld(), Start, End, AtmoCheckRadius, { UEngineTypes::ConvertToObjectType(ECC_PhysicsBody), UEngineTypes::ConvertToObjectType(ECC_Pawn) },
+		false, { GetOwner() }, ShowAtmoInner ? EDrawDebugTrace::ForOneFrame : EDrawDebugTrace::None, Hits, true, FLinearColor::Yellow, FLinearColor::Yellow);
+
 
 	bool Found = false;
 	for (FHitResult& Hit : Hits)
@@ -196,13 +197,16 @@ void UGravityBound::AtmosphereVelChange(UPrimitiveComponent* PrimitiveComponent,
 		}
 	}
 
-	if (Found)
+	if (FireEngine)
 	{
-		FireEngine->NotifyAtmoForce(false);
-		return;
-	}
+		if (Found)
+		{
+			FireEngine->NotifyAtmoForce(false);
+			return;
+		}
 
-	FireEngine->NotifyAtmoForce(true);
+		FireEngine->NotifyAtmoForce(true);
+	}
 
 	FVector VelocityDir = PrimitiveComponent->GetPhysicsLinearVelocity();
 

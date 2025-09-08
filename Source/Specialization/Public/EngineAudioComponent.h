@@ -8,7 +8,7 @@
 #include "EngineAudioComponent.generated.h"
 
 /**
- * 
+ * Audio component for an actor that presents a fire engine.
  */
 UCLASS()
 class SPECIALIZATION_API UEngineAudioComponent : public UAudioComponent
@@ -24,18 +24,22 @@ protected:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	/*
+	* Its relative position.
+	* Defines the strength of the audio volume based on its position and the fire engine movement.
+	*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EngineAudio")
 	EEnginePosition EnginePosition;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EngineAudio")
-	FVector2D MinMaxForceValues;
-	
+	/*The possible range of the pitch value of the sound*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EngineAudio")
 	FVector2D MinMaxPitchValues;
 
+	/*Pitch interpolation speed*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EngineAudio")
 	float PitchInterpSpeed = .6f;
 	
+	/*Volume interpolation speed*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EngineAudio")
 	float VolumeInterpSpeed = .3f;
 
@@ -44,25 +48,28 @@ protected:
 	/*Only for CENTER, LEFT, RIGHT*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EngineAudio")
 	float LateralMovementDotAcceptance = .2f;
-	
 
 	UFUNCTION(BlueprintCallable)
 	float NormalizeForce(float Force) const;
-
-	FVector SelfRelativePosition;
 
 	UFUNCTION()
 	void OnVerticalMovement(FVector WorldDir, float Magnitude, FTransform CallingTransform);
 
 	UFUNCTION()
 	void OnLateralMovement(FVector WorldDir, float Magnitude, FTransform CallingTransform);
+
+	UFUNCTION()
+	FVector GetRelativeDir() const;
 	
 	UFUNCTION()
 	void OnAutomaticPilot(bool Active);
 
 	void UpdateSound(float Force);
 
-	bool ToggleActivity(float OtherDirection, float DirectionSquaredLength);
+	/*
+	* Checks whether fire engine current force (opposing direction) is active.
+	*/
+	bool ToggleActivity(float OpposingDirection, float DirectionSquaredLength);
 
 	FVector2D VerticalLateral;
 

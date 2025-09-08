@@ -20,6 +20,7 @@ void UEnergyComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	/*Create energy structures*/
 	for (FEnergyInfo& I : EnergyInfos)
 	{
 		UEnergyStructure* ES = NewObject<UEnergyStructure>(this, UEnergyStructure::StaticClass());
@@ -88,13 +89,13 @@ void UEnergyComponent::StopConsumeEnergy(EEnergyType ConsumingEnergyType)
 	}
 }
 
-void UEnergyComponent::RestoreMaxEnergy(EEnergyType ConsumingEnergyType, bool Active)
+void UEnergyComponent::RestoreMaxEnergy(EEnergyType ConsumingEnergyType, bool IsHardUpdate)
 {
 	for (UEnergyStructure* ES : EnergyStructures)
 	{
 		if (ES->GetEnergyType() == ConsumingEnergyType)
 		{
-			ES->ToggleRestoreEnergy(Active);
+			ES->ToggleRestoreEnergy(IsHardUpdate);
 			break;
 		}
 	}

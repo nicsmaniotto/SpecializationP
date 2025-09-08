@@ -8,6 +8,15 @@ void AWhiteHole::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Make reposition transform world spaced
+	FTransform T = FTransform();
+
+	T.SetLocation(UKismetMathLibrary::TransformLocation(GetActorTransform(), RepositionTransform.GetLocation()));
+	T.SetRotation(UKismetMathLibrary::TransformRotation(GetActorTransform(), RepositionTransform.GetRotation().Rotator()).Quaternion());
+
+	RepositionTransform = T;
+
+	// Bind to collision event
 	HoleCollision->OnComponentEndOverlap.AddUniqueDynamic(this, &AWhiteHole::OnEndOverlap);
 }
 
@@ -15,6 +24,7 @@ void AWhiteHole::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// repulsing components
 	for (UPrimitiveComponent* P : PComponents)
 	{
 		FVector Vel = P->GetComponentLocation() - GetActorLocation();
@@ -42,8 +52,6 @@ void AWhiteHole::OnBeginOverlap_Implementation(
 	OtherComp->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
 
 	PComponents.Add(OtherComp);
-
-	//OtherComp->AddImpulse(Vel * RepulsionForce, NAME_None, true);
 }
 
 void AWhiteHole::OnEndOverlap(
@@ -57,5 +65,10 @@ void AWhiteHole::OnEndOverlap(
 	if (!PComponents.Contains(OtherComp)) return;
 
 	PComponents.Remove(OtherComp);
+}
+
+FTransform AWhiteHole::GetRepositionTransform() const
+{
+	return RepositionTransform;
 }
 

@@ -16,7 +16,11 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMovement, EMovType, MovType);
 class UEnergyComponent;
 
 /**
- *
+ * @See class FireEngine
+ * This component works both as fire engine and movement component for player.
+ * Moreover, the alignment from a gravity force is overriden into a more controllable component
+ * retrieved by the owner (if implements IRepositionable).
+ * @See interface IRepositionable
  */
 UCLASS()
 class SPECIALIZATION_API UJetpack : public UFireEngine
@@ -26,23 +30,37 @@ class SPECIALIZATION_API UJetpack : public UFireEngine
 protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	/*Alignment "override" in order to always follow gravity alignment without physics forces*/
+	virtual void CustomReposition(float DeltaTime);
+
+	/*Compensation for planet movement*/
+	virtual void PositionAdjustment(float DeltaTime);
+
+	/*Jump behavior*/
+	virtual void JumpTick(float DeltaTime);
+
 protected:
+	/*Propulsion growth value on air*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Propulsion")
 	float AirPropulsionGrowthSpeed = .8f;
 
+	/*Propulsion growth value on land*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Propulsion")
 	float GroundPropulsionGrowthSpeed = 2;
 
+	/*Propulsion decay value when used*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Propulsion")
 	float PropulsionDecaySpeed = 1.2f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Rotation")
-	float CustomRepositionLerpSpeed = 65;
-
+	/*Manages propulsion*/
 	UFUNCTION()
 	void HandlePropSpeed(float DeltaTime);
 
 	float PropulsionValue = 1;
+
+	/*Alignment rotation lerp value*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Rotation")
+	float CustomRepositionLerpSpeed = 65;
 
 	bool bCanThrottle = true;
 
@@ -56,36 +74,41 @@ protected:
 
 	virtual FRotator GetDirectionRotation() const override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Walk", meta = (AllowPrivateAccess = "true"))
 	bool bOnJetpack = false;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintReadOnly, Category = "Movement | Walk", meta = (AllowPrivateAccess = "true"))
 	FVector LastMovDirection;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Walk", meta = (AllowPrivateAccess = "true"))
 	float MaxWalkSpeed = 1300;
 
 	// Jump
-	float JumpHoldTimer;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	/*X: time; Y: Applied relative Z Force*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Walk", meta = (AllowPrivateAccess = "true"))
 	UCurveFloat* JumpForceCurve;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float JumpHoldTimer;
+
+	/*Custom top gravity timer*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Walk", meta = (AllowPrivateAccess = "true"))
 	float JumpTopFreedomTime = .4f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float JumpTopFreedomTimer = 0;
+
+	/*Custom top gravity divider: higher the value, less oppressive is gravity*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Walk", meta = (AllowPrivateAccess = "true"))
 	float JumpTopGravityDivider = 1.5f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true", ClampMin = "0", ClampMax = "1"))
+	/*Scale value of the movement direction applied to jump*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Walk", meta = (AllowPrivateAccess = "true", ClampMin = "0", ClampMax = "1"))
 	float JumpDirectionMultiplier = .4f;
-
-	float JumpTopFreedomTimer = 0;
 
 	bool bHasJumped;
 
 	bool IsForcedReposition;
 
+	/*Current Movement state*/
 	EMovType MovType = EMovType::NONE;
 
 public:
@@ -117,12 +140,6 @@ public:
 	float GetPropulsionValue() const { return PropulsionValue; }
 
 	USceneComponent* GetRepositionableComponent_Implementation() const override;
-
-	void CustomReposition(float DeltaTime);
-
-	void PositionAdjustment(float DeltaTime);
-
-	void JumpTick(float DeltaTime);
 
 	UFUNCTION(BlueprintCallable)
 	bool Jump();

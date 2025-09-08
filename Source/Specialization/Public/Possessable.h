@@ -14,7 +14,7 @@ class UPossessable : public UInterface
 };
 
 /**
- * 
+ * Possessable interface
  */
 class SPECIALIZATION_API IPossessable
 {

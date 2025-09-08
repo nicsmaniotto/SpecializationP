@@ -22,7 +22,9 @@ void UForcedGravityBound::EnlistComponent(UPrimitiveComponent* OtherComp)
 		LinearVelocity.Normalize();
 
 		FVector COG = UKismetMathLibrary::TransformLocation(GetComponentTransform(), CenterOfGravity);
-		FVector Dir = COG - OtherComp->GetComponentLocation();
+		FVector ReversedCOG = UKismetMathLibrary::TransformLocation(GetComponentTransform(), -CenterOfGravity);
+		//FVector Dir = COG - OtherComp->GetComponentLocation();
+		FVector Dir = FMath::ClosestPointOnLine(ReversedCOG, COG, OtherComp->GetComponentLocation()) - OtherComp->GetComponentLocation();
 
 		LinearVelocity = Dir.GetSafeNormal() * LinearVelocityAdjusted;
 

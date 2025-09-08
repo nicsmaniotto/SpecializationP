@@ -12,7 +12,9 @@ class UIndicatorWidget;
 struct FSlateBrush;
 
 /**
- * 
+ * @See class MarkingComponent
+ * @See class Marker
+ * Widget that is applied to a marking component to visualize the actual marked object
  */
 UCLASS()
 class SPECIALIZATION_API UMarkerWidget : public UUserWidget
@@ -23,15 +25,19 @@ protected:
 	void NativeConstruct() override;
 
 protected:
+	/*Default brush of the marked object*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marker")
 	FSlateBrush NormalBrush;
 	
+	/*Locked brush of the marked object*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Marker")
 	FSlateBrush LockedBrush;
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Marker", meta = (BindWidget))
 	UImage* MarkerImg;
 	
+	// Indicators
+protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Marker", meta = (BindWidget))
 	UIndicatorWidget* LeftIndicator;
 	
@@ -47,6 +53,7 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Marker")
 	TMap<EIndicatorType, UIndicatorWidget*> IndicatorMap;
 
+	/*Divider of the length of the approach forces along horizontal/vertical*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Indicator")
 	float LengthDivider = 500;
 

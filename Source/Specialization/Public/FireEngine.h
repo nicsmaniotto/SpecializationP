@@ -26,12 +26,21 @@ UDELEGATE()
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAutomaticPilot, bool, Active);
 
 UDELEGATE()
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAtmosphereUpdate, APlanet*, Planet);
+
+UDELEGATE()
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnVerticalMovement, FVector, ForceDir, float, Magnitude, FTransform, Transform);
 
 UDELEGATE()
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnLateralMovement, FVector, ForceDir, float, Magnitude, FTransform, Transform);
 
-
+/*
+* This actor component is a reusable component for every object we want to be moved on air.
+* This actor manages:
+*	- on air movement / rotation
+* 	- gravity 
+* 	- automatic pilot.
+*/
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class SPECIALIZATION_API UFireEngine : public UActorComponent, public IRepositionable
 {
@@ -58,6 +67,10 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Movement | Throttle")
 	bool IsReversing;
 
+	/*
+	* Curve of force multiplied to throttle MoveForce when owner is not on air.
+	* It can be seen as a detach force from terrain.
+	*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Throttle")
 	UCurveFloat* ThrottleCurve;
 
@@ -69,24 +82,38 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Movement | Reposition")
 	bool IsRepositioning;
 
+	/*
+	* @see class: GravityBound - function: AskAlignment
+	* @see class: this - function: UpdateGravityForce
+	* Allowable reposition types an atmosphere can execute on the owner
+	*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement | Reposition")
 	TArray<ERepositionType> RepositionTypes;
 
+	/*
+	* Force for relative XY movement
+	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | Throttle")
 	float LateralMoveForce = 300;
 
+	/*
+	* Force for relative Z movement
+	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | Throttle")
 	float MoveForce = 300;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | Look")
 	float TorqueForce = 10;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | Look")
-	float LookDrag = 10;
 	
+	/*
+	* Gets the rotation of the component used for determining the movement direction
+	*/
 	UFUNCTION(BlueprintCallable, Category = "Movement | Look")
 	virtual FRotator GetDirectionRotation() const;
 
+	/*
+	* Timer that determines when to execute the reposition (if not forced)
+	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | Reposition")
 	float RepositionTimerThreshold = 1.5f;
 
@@ -95,33 +122,39 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | General", meta = (MakeEditWidget))
 	FVector FeetPosition;
 
+	/*
+	* Distance of the line trace to determine if on air or not
+	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement | General")
 	float AirCheckLength = 100;
 
 	bool OnAir;
 
+	/*
+	* function to determine if on air or not (placed on tick)
+	*/
 	bool AirChecker();
 
-	//bool IsMoving = false;
-
+	/*
+	* @see class: GravityBound - function: ExecuteGravity
+	* @see class: this - function: 
+	* Stored gravity force
+	*/
 	FVector GravityForce;
 
-	/*Under this velocity threshold the landing is easier*/
+	/*Under this velocity threshold, landing is easier*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Landing")
 	float LandingVelocityThreshold = 10000;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Landing")
-	float LandingAngularVelocityDivider = 50;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Landing")
-	float LandingLinearVelocityDivider = 100;
 	
+	/* Damping used when in space */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Damping")
 	float SpaceLinearDamping = .1f;
 	
+	/* Damping used when in atmosphere (or in automatic pilot) */
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Damping")
 	float NormalLinearDamping;
 
+	/* used on hit to reduce instantaneously velocity */
 	UFUNCTION()
 	void LandHelper(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
@@ -134,10 +167,15 @@ protected:
 	UPROPERTY()
 	APlanet* LandingPlanet;
 
-	/*Automatic pilot*/
+	/*Automatic pilot approach distance acceptance*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Automatic")
 	float AutomaticApproachAcceptance = 10;
+	
+	/*This value is an adjustment value for the retrieval of the distance to stop. Higher the value, closer to object*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement | Automatic")
+	float StopForceAdjustmentValue = .35f;
 
+	/*Useful as a variable for sound*/
 	UPROPERTY(BlueprintReadOnly)
 	FHitResult SurfaceHit;
 
@@ -167,6 +205,9 @@ public:
 
 	virtual USceneComponent* GetRepositionableComponent_Implementation() const override { return OwnerPhysicsComponent; }
 
+	/*
+	* @see class: GravityBound - function: ExecuteGravity
+	*/
 	virtual void UpdateGravityForce(FVector OldGForce, FVector NewGForce);
 
 	virtual void ToggleAutomaticPilot(bool Active);
@@ -188,8 +229,13 @@ public:
 	FVector GetGForce() const { return GravityForce; }
 
 	UFUNCTION(BlueprintCallable)
-	bool IsInAtmosphere() const { return GravityForce.SquaredLength() > 0; }
+	bool IsInAtmosphere() const { return !!LandingPlanet; }
 
+	UPROPERTY(BlueprintAssignable)
+	FOnAtmosphereUpdate OnAtmosphereUpdate;
+
+	// notifies liminal atmosphere force
+	// @see class AtmoFeedback
 	UFUNCTION(BlueprintCallable)
 	void NotifyAtmoForce(bool Active);
 

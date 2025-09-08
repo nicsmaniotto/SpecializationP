@@ -25,6 +25,7 @@ void USpaceshipHUD::SetupEvents_Implementation(AActor* LinkedActor)
 
 void USpaceshipHUD::OnJetpackEquip(bool OnJetpack)
 {
+	/*Switch between texts*/
 	if (OnJetpack)
 	{
 		ToggleJetpackTxt->SetText(UnequipTxt);

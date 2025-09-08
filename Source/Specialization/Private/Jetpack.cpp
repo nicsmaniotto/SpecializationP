@@ -72,13 +72,13 @@ void UJetpack::StartMove(const FInputActionValue& Value)
 
 	if (PlanetSurface && !GetOnAir())
 	{
-		FVector DampCompensation = OwnerPhysicsComponent->GetPhysicsLinearVelocity() / OwnerPhysicsComponent->GetLinearDamping();
-		FVector PlanetForces = PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(OwnerPhysicsComponent->GetComponentLocation());
+		FVector OwnerLoc = OwnerPhysicsComponent->GetComponentLocation();
 
-		//GetCapsuleComponent()->SetPhysicsLinearVelocity(PlanetForces, true);
+		FVector DampCompensation = OwnerPhysicsComponent->GetPhysicsLinearVelocity() / OwnerPhysicsComponent->GetLinearDamping();
+		FVector PlanetForces = PlanetSurface->GetDeltaVelocity(OwnerLoc) + PlanetSurface->GetDeltaAngForce(OwnerLoc);
 
 		OwnerPhysicsComponent->AddForce(
-			(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(OwnerPhysicsComponent->GetComponentLocation())) * OwnerPhysicsComponent->GetLinearDamping(),
+			(PlanetSurface->GetDeltaVelocity(OwnerLoc) + PlanetSurface->GetDeltaAngForce(OwnerLoc)) * OwnerPhysicsComponent->GetLinearDamping(),
 			NAME_None, true);
 	}
 }
@@ -106,7 +106,7 @@ void UJetpack::Move(const FInputActionValue& Value)
 	APlanet* PlanetSurface = GetPlanetSurface();
 	if (PlanetSurface)
 	{
-		PlanetVelocity = PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(OwnerPhysicsComponent->GetComponentLocation());
+		PlanetVelocity = PlanetSurface->GetDeltaVelocity(OwnerPhysicsComponent->GetComponentLocation()) + PlanetSurface->GetDeltaAngForce(OwnerPhysicsComponent->GetComponentLocation());
 	}
 
 	FVector ForVector = OwnerPhysicsComponent->GetForwardVector();
@@ -125,6 +125,10 @@ void UJetpack::Move(const FInputActionValue& Value)
 
 	if (!GetOnAir())
 	{
+		FVector SurfaceNormal = GetHitSurface().ImpactNormal;
+		ForVector = FVector::CrossProduct(ForVector, SurfaceNormal);
+		ForVector = FVector::CrossProduct(SurfaceNormal, ForVector);
+
 		ForVector += PlanetVelocity;
 
 		OwnerPhysicsComponent->SetPhysicsLinearVelocity(ForVector, false);
@@ -275,16 +279,17 @@ void UJetpack::PositionAdjustment(float DeltaTime)
 
 	if (PlanetSurface)
 	{
+		FVector OwnerLoc = OwnerPhysicsComponent->GetComponentLocation();
 		if (GetOnAir())
 		{
 			OwnerPhysicsComponent->AddForce(
-				(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(OwnerPhysicsComponent->GetComponentLocation())) * (OwnerPhysicsComponent->GetLinearDamping()),
+				(PlanetSurface->GetDeltaVelocity(OwnerLoc) + PlanetSurface->GetDeltaAngForce(OwnerLoc)) * (OwnerPhysicsComponent->GetLinearDamping()),
 				NAME_None, true);
 		}
-		//else if (MovType != EMovType::WALK && !bHasJumped)
-		//{
-		//	//OwnerPhysicsComponent->SetPhysicsLinearVelocity(PlanetSurface->GetDeltaVelocity() + PlanetSurface->GetDeltaAngForce(OwnerPhysicsComponent->GetComponentLocation()), false);
-		//}
+		else if (MovType != EMovType::WALK && !bHasJumped)
+		{
+			OwnerPhysicsComponent->SetPhysicsLinearVelocity(PlanetSurface->GetDeltaVelocity(OwnerLoc) + PlanetSurface->GetDeltaAngForce(OwnerLoc), false);
+		}
 	}
 }
 

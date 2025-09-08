@@ -28,6 +28,7 @@ void UMarker::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponen
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	// check if this component is executing on the current possessed pawn
 	APlayerController* Controller = CheckController();
 
 	if (!Controller)
@@ -42,10 +43,12 @@ void UMarker::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponen
 
 	if (!IsMarking)
 	{
+		// check if it is hitting some markable components
 		UMarkingComponent* WC = CheckMarker(Controller);
 
 		if (!WC)
 		{
+			// deactivate if not hitting anything and we stored the ref of something hit before
 			if (MarkedObject)
 			{
 				MarkedObject->ToggleVisualLock(false);
@@ -57,16 +60,14 @@ void UMarker::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponen
 
 		if (MarkedObject)
 		{
-			if (MarkedObject != WC)
-			{
-				MarkedObject->ToggleVisualLock(false);
-			}
-			else
-			{
-				return;
-			}
+			// skip execution if current == stored
+			if (MarkedObject == WC) return;
+
+			// else deactivate stored if different from current found
+			MarkedObject->ToggleVisualLock(false);
 		}
 
+		// update current one
 		MarkedObject = WC;
 
 		MarkedObject->ToggleVisualLock(true);
@@ -97,8 +98,6 @@ UMarkingComponent* UMarker::CheckMarker(APlayerController* PlayerController)
 		Loc + Dir * CheckDistance, CheckType,
 		false, { GetOwner() }, EDrawDebugTrace::ForOneFrame, Hit, true);
 
-	float DotValue = -1;
-
 	if (!Hit.bBlockingHit) return nullptr;
 
 	return Hit.GetActor()->GetComponentByClass<UMarkingComponent>();
@@ -106,8 +105,6 @@ UMarkingComponent* UMarker::CheckMarker(APlayerController* PlayerController)
 
 void UMarker::ToggleMarkObject()
 {
-	//if (!MarkedObject) return;
-
 	if (IsMarking)
 	{
 		MarkedObject->ToggleLock(nullptr);

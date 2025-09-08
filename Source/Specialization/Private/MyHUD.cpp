@@ -68,6 +68,7 @@ void AMyHUD::BeginPlay()
 
 void AMyHUD::OnSpaceshipInteraction(bool OnSpaceship)
 {
+	// switch betweens HUDs
 	if (OnSpaceship)
 	{
 		AskToggleWidget(true, EWidgetType::SHIP);

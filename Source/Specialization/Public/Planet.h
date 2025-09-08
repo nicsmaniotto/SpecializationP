@@ -10,6 +10,15 @@
 class UGravityBound;
 class USplineComponent;
 
+
+/*
+* @See class GravityBound
+* Moving Planet with:
+*	- revolution around spline,
+*	- gravity bound,
+*	- rotation around self.
+* !Notice that the planet itself stays immobile while the Mesh moves and rotates!
+*/
 UCLASS()
 class SPECIALIZATION_API APlanet : public AActor, public IMarkable
 {
@@ -31,20 +40,21 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Planet | Structure", BlueprintReadOnly)
 	USplineComponent* Orbit;
 
-	// SelfRotation
+	/*Rotation motion*/
 	UPROPERTY(EditAnywhere, Category = "Planet | Generic", BlueprintReadOnly)
 	float RotationSpeed = .2f;
 
 	UFUNCTION(BlueprintCallable)
 	void MeshRotation(float DeltaTime);
 
-	// Orbit
+	/*Revolution motion*/
 	UPROPERTY(EditAnywhere, Category = "Planet | Orbit", BlueprintReadOnly)
 	float OrbitSpeed = 1200;
 
 	UFUNCTION(BlueprintCallable)
 	void OrbitFollow(float DeltaTime);
 
+	/*Initial spline position*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet | Orbit")
 	float PositionInSpline = 0;
 	
@@ -70,8 +80,10 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	FVector GetDeltaVelocity() const;
+	/*Get Planet linear velocity*/
+	FVector GetDeltaVelocity(FVector Location) const;
 
+	/*Get Planet angular force applied to element at Location*/
 	FVector GetDeltaAngForce(FVector Location) const;
 
 };

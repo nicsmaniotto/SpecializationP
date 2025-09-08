@@ -20,6 +20,7 @@ void USpaceshipMovUI::SetupEvents_Implementation(AActor* LinkedActor)
 {
 	UFireEngine* FE = LinkedActor->GetComponentByClass<UFireEngine>();
 
+	// links to movement
 	if (FE)
 	{
 		FE->OnVerticalMovement.AddUniqueDynamic(this, &USpaceshipMovUI::OnVerticalMovement);
@@ -44,6 +45,7 @@ void USpaceshipMovUI::OnSpaceshipInteraction(bool OnSpaceship)
 
 void USpaceshipMovUI::OnAutomaticPilot(bool Active)
 {
+	// reset bars when automatic pilot ends
 	if (!Active)
 	{
 		ResetPercentages();
@@ -60,7 +62,7 @@ void USpaceshipMovUI::ResetPercentages()
 
 void USpaceshipMovUI::OnVerticalMovement(FVector WorldDir, float Magnitude, FTransform CallingTransform)
 {
-	float Length = WorldDir.Length();
+	// find relative position of the movement
 	FVector RelativeDir = UKismetMathLibrary::InverseTransformDirection(CallingTransform, WorldDir);
 
 	EBarPosition Pos = EBarPosition::TOP;
@@ -75,6 +77,7 @@ void USpaceshipMovUI::OnVerticalMovement(FVector WorldDir, float Magnitude, FTra
 
 void USpaceshipMovUI::OnLateralMovement(FVector WorldDir, float Magnitude, FTransform CallingTransform)
 {
+	// find relative position of the movement
 	FVector RelativeDir = UKismetMathLibrary::InverseTransformDirection(CallingTransform, WorldDir);
 
 	EBarPosition Pos = EBarPosition::FRONT;
@@ -119,6 +122,7 @@ UProgressBar* USpaceshipMovUI::GetOpposingBar(EBarPosition Position) const
 
 void USpaceshipMovUI::FillBar(EBarPosition Position, float Perc)
 {
+	// fill bar and reset opposing
 	BarPositions[Position]->SetPercent(FMath::Abs(Perc));
 	GetOpposingBar(Position)->SetPercent(0);
 }

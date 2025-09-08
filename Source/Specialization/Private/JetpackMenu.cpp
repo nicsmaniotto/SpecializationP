@@ -27,14 +27,12 @@ void UJetpackMenu::SetupEvents_Implementation(AActor* LinkedActor)
 
 	if (FE)
 	{
-		FE->OnGravityUpdate.AddUniqueDynamic(this, &UJetpackMenu::OnGravityUpdate);
+		FE->OnAtmosphereUpdate.AddUniqueDynamic(this, &UJetpackMenu::OnAtmosphereUpdate);
 	}
 }
 
 void UJetpackMenu::OnJetpackEquip(bool IsEquipped)
 {
-	if (!JetpackContainer) return;
-
 	IsJetpackEquipped = IsEquipped;
 
 	if (AppearAnim)
@@ -50,16 +48,16 @@ void UJetpackMenu::OnJetpackEquip(bool IsEquipped)
 
 }
 
-void UJetpackMenu::OnGravityUpdate(FVector OldGravity, FVector NewGravity)
+void UJetpackMenu::OnAtmosphereUpdate(APlanet* Planet)
 {
 	if (!IsJetpackEquipped) return;
 
-	if (PropulsionSlider->GetRenderOpacity() == 0 && NewGravity.SquaredLength() > 0)
+	if (PropulsionSlider->GetRenderOpacity() == 0 && !!Planet)
 	{
 		PlayAnimationForward(PropulsionAppearAnim);
 	}
 
-	if (PropulsionSlider->GetRenderOpacity() > 0 && NewGravity.SquaredLength() == 0)
+	if (PropulsionSlider->GetRenderOpacity() > 0 && !Planet)
 	{
 		PlayAnimationReverse(PropulsionAppearAnim);
 	}

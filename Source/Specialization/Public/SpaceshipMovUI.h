@@ -10,7 +10,7 @@
 #include "SpaceshipMovUI.generated.h"
 
 /**
- * 
+ * Widget that visualizes the spaceship movement
  */
 UCLASS()
 class SPECIALIZATION_API USpaceshipMovUI : public UUserWidget, public ISetuppable

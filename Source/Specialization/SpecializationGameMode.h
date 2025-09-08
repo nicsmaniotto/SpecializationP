@@ -16,6 +16,10 @@ public:
 
 	void BeginPlay() override;
 
+	/* 
+	* @See GravityBound
+	* Gravity multiplier used by all gravity bounds for gravity execution
+	*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gravity")
 	float GravityMultiplier = 30000;
 

@@ -14,7 +14,8 @@ UDELEGATE()
 DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnUpdate, EEnergyType, EnergyType, float, OldValue, float, NewValue);
 
 /**
- *
+ *	Single energy type manager.
+ *  It stores the current state of that single energy type.
  */
 UCLASS()
 class SPECIALIZATION_API UEnergyStructure : public UObject
@@ -30,7 +31,7 @@ public:
 
 	void StopConsumeEnergy();
 	
-	void ToggleRestoreEnergy(bool Active);
+	void ToggleRestoreEnergy(bool IsHardUpdate);
 
 	float GetEnergy() const { return Energy; }
 
@@ -47,11 +48,13 @@ public:
 	FOnUpdate OnUpdate;
 
 private:
-	EEnergyType Type;
-
+	// Current state
 	float Energy = 1;
 
 	float TargetEnergy = 1;
+
+	// static infos
+	EEnergyType Type;
 
 	float GrowthValue;
 	

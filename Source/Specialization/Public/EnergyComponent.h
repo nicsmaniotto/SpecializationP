@@ -12,7 +12,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnEnergyUpdate, EEnergyType, Ene
 
 class UEnergyStructure;
 
-
+/**
+* Actor component that holds the available energy types an element can use.
+*/
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class SPECIALIZATION_API UEnergyComponent : public UActorComponent
 {
@@ -31,9 +33,11 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:
+	/*Different available energies*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Energy")
 	TArray<FEnergyInfo> EnergyInfos;
 	
+	/*Instances of single energy type manager*/
 	UPROPERTY(BlueprintReadOnly, Category = "Energy")
 	TArray<UEnergyStructure*> EnergyStructures;
 
@@ -41,6 +45,14 @@ protected:
 	void OnEnergyUpdated(EEnergyType EnergyType, float OldValue, float NewValue);
 
 public:
+	/*
+	* Accepts:
+	*	- a map of desired energy types to use and a boolean
+	*		defining whether it is an hard consume.
+	* Returns:
+	*	- the first available energy type consumed or EEnergyType::NONE
+	*		if none are availables 
+	*/
 	UFUNCTION(BlueprintCallable)
 	EEnergyType StartConsumeEnergy(TMap<EEnergyType, bool> EnergyPriorityTypes);
 	
@@ -48,7 +60,7 @@ public:
 	void StopConsumeEnergy(EEnergyType ConsumingEnergyType);
 	
 	UFUNCTION(BlueprintCallable)
-	void RestoreMaxEnergy(EEnergyType ConsumingEnergyType, bool Active);
+	void RestoreMaxEnergy(EEnergyType ConsumingEnergyType, bool IsHardUpdate);
 
 	UPROPERTY(BlueprintAssignable)
 	FOnEnergyUpdate OnEnergyUpdate;

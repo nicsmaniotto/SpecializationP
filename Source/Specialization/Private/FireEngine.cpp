@@ -85,15 +85,8 @@ bool UFireEngine::AirChecker()
 		Dir == -OwnerPhysicsComponent->GetUpVector();
 	}
 
-	//UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility);
-
 	UKismetSystemLibrary::LineTraceSingle(GetWorld(), Loc, Loc + Dir * AirCheckLength, UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_WorldStatic), false,
 		{ GetOwner() }, EDrawDebugTrace::ForOneFrame, SurfaceHit, true, FColor::Blue);
-
-	/*UKismetSystemLibrary::SphereOverlapComponents(GetWorld(), Loc, AirCheckRadius,
-		{ EObjectTypeQuery::ObjectTypeQuery1 }, UStaticMeshComponent::StaticClass(), { GetOwner() }, Hits);*/
-
-		//DrawDebugSphere(GetWorld(), Loc, AirCheckRadius, 32, FColor::Emerald, false, .01f);
 
 	return !SurfaceHit.bBlockingHit;
 }
@@ -103,19 +96,19 @@ void UFireEngine::LandHelper(UPrimitiveComponent* HitComponent, AActor* OtherAct
 	FVector LinearVelocity = OwnerPhysicsComponent->GetPhysicsLinearVelocity();
 	if (LinearVelocity.Length() > LandingVelocityThreshold) return;
 
-	//OwnerPhysicsComponent->SetPhysicsLinearVelocity(LinearVelocity / LandingLinearVelocityDivider);
-	//OwnerPhysicsComponent->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
-	//OwnerPhysicsComponent->SetPhysicsAngularVelocityInDegrees(OwnerPhysicsComponent->GetPhysicsAngularVelocityInDegrees() / LandingAngularVelocityDivider);
 	OwnerPhysicsComponent->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 }
 
+/* Planet retrieval */
 void UFireEngine::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	APlanet* Planet = Cast<APlanet>(OtherActor);
 	if (Planet)
 	{
 		LandingPlanet = Planet;
+		OnAtmosphereUpdate.Broadcast(LandingPlanet);
 	}
+
 }
 
 void UFireEngine::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -124,6 +117,7 @@ void UFireEngine::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 	if (Planet)
 	{
 		LandingPlanet = nullptr;
+		OnAtmosphereUpdate.Broadcast(LandingPlanet);
 	}
 }
 
@@ -133,11 +127,9 @@ void UFireEngine::Move(const FInputActionValue& Value)
 
 	if (IsAutomatic) return;
 
-	//LookAxisVector.Normalize();
-
 	if (HorizontalMovement(MovementVector))
 	{
-		//IsMoving = true;
+		// ...
 	}
 
 }
@@ -152,7 +144,6 @@ void UFireEngine::Throttle(const FInputActionValue& Value)
 	if (IsAutomatic) return;
 
 	float AxisValue = Value.Get<float>();
-	//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Axis Val: %f"), AxisValue));
 
 	if (VerticalMovement(AxisValue))
 	{
@@ -210,7 +201,6 @@ bool UFireEngine::HorizontalMovement(FVector2D LookAxisVector)
 bool UFireEngine::VerticalMovement(float GravityMultiplier)
 {
 	FVector Throttle = GetDirectionRotation().Quaternion().GetUpVector();
-	//Throttle.Normalize();
 	Throttle *= GravityMultiplier;
 
 	float ThrottleForce = MoveForce;
@@ -331,17 +321,20 @@ void UFireEngine::ToggleAutomaticPilot(bool Active)
 
 void UFireEngine::AutomaticPilotMovement()
 {
+	// gets current object we want to approach to
 	UMarkingComponent* MC = Marker->GetMarkedObject();
 
-	if (!Marker->GetIsMarking() || !MC)
+	if (!MC || !Marker->GetIsMarking())
 	{
 		ToggleAutomaticPilot(false);
 		return;
 	}
 
+	// retrieve approach forces
 	FVector ApproachForces = MC->GetApproachForces();
 	float FinalDist = ApproachForces.SquaredLength();
 
+	// if we are already on acceptance distance stop
 	if (ApproachForces.SquaredLength() < FMath::Square(AutomaticApproachAcceptance))
 	{
 		ToggleAutomaticPilot(false);
@@ -355,8 +348,10 @@ void UFireEngine::AutomaticPilotMovement()
 
 	FVector2D XYForce = FVector2D(RelativeDir.Y, RelativeDir.X);
 
-	float TempDistToStop = (PhysicsVelocity.SquaredLength() * OwnerPhysicsComponent->GetLinearDamping()) / (2.35f * (ApproachForces.GetSafeNormal() * MoveForce).SquaredLength());
+	// retrieve distance to stop based on current velocity and actual force
+	float TempDistToStop = (PhysicsVelocity.SquaredLength() * OwnerPhysicsComponent->GetLinearDamping()) / ((2 + StopForceAdjustmentValue) * (ApproachForces.GetSafeNormal() * MoveForce).SquaredLength());
 
+	// activate retro forces one time only if distancetostop is greater than the distance of approach and movement direction matches the approach direction
 	if (!IsRetroFireActivated && FVector::DotProduct(PhysicsVelocity, ApproachForces) > 0 && FMath::Square(TempDistToStop) >= ApproachForces.SquaredLength())
 	{
 		IsRetroFireActivated = true;
@@ -368,6 +363,7 @@ void UFireEngine::AutomaticPilotMovement()
 		RelativeDir.Z *= -1;
 	}
 
+	//if movement direction does not match the approach direction stop automatic pilot
 	if (IsRetroFireActivated && FVector::DotProduct(PhysicsVelocity, ApproachForces) < 0)
 	{
 		ToggleAutomaticPilot(false);
@@ -376,6 +372,7 @@ void UFireEngine::AutomaticPilotMovement()
 
 	bool MovFlag = true;
 
+	// check if can execute a desired type of movement
 	if (XYForce.SquaredLength() > 0)
 	{
 		MovFlag = MovFlag && HorizontalMovement(XYForce.GetSafeNormal());
@@ -413,17 +410,3 @@ void UFireEngine::NotifyAtmoForce(bool Active)
 
 	OnAtmoForce.Broadcast(Dir, Magnitude);
 }
-//
-//void UFireEngine::AdjustDirection()
-//{
-//	if (!(IsLooking || IsRepositioning))
-//	{
-//		FVector AngularVelocity = OwnerPhysicsComponent->GetPhysicsAngularVelocityInDegrees();
-//		AngularVelocity = UKismetMathLibrary::VLerp(AngularVelocity, FVector::ZeroVector, GetWorld()->GetDeltaSeconds() * AngularVelocityDeterrent);
-//
-//		//OwnerPhysicsComponent->SetPhysicsAngularVelocityInDegrees(AngularVelocity);
-//
-//		//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::White, FString::Printf(TEXT("Angular Velocity: %f - %f - %f"), AngularVelocity.X, AngularVelocity.Y, AngularVelocity.Z));
-//	}
-//}
-

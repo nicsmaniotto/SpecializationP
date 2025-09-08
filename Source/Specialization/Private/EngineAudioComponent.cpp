@@ -70,8 +70,6 @@ void UEngineAudioComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 float UEngineAudioComponent::NormalizeForce(float Force) const
 {
-	//float Normalized = (Force - MinMaxForceValues.X) / (MinMaxForceValues.Y - MinMaxForceValues.X);
-
 	return MinMaxPitchValues.X + (Force * (MinMaxPitchValues.Y - MinMaxPitchValues.X));
 }
 
@@ -79,15 +77,12 @@ void UEngineAudioComponent::UpdateSound(float Force)
 {
 	float Normalized = NormalizeForce(Force);
 
-	//CurrentPitchMultiplier = Normalized;
 	CurrentPitchMultiplier = Normalized;
-	
-	//GEngine->AddOnScreenDebugMessage(-1, .1, FColor::Red, FString::Printf(TEXT("Adjusting pitch")));
 }
 
-bool UEngineAudioComponent::ToggleActivity(float OtherDirection, float DirectionSquaredLength)
+bool UEngineAudioComponent::ToggleActivity(float OpposingDirection, float DirectionSquaredLength)
 {
-	if (OtherDirection == 0)
+	if (OpposingDirection == 0)
 	{
 		if (CurrentVolumeMultiplier > 0 && DirectionSquaredLength == 0)
 		{
@@ -116,7 +111,7 @@ void UEngineAudioComponent::OnVerticalMovement(FVector WorldDir, float Magnitude
 
 void UEngineAudioComponent::OnLateralMovement(FVector WorldDir, float Magnitude, FTransform CallingTransform)
 {
-	FVector EngineRelativeDir = GetComponentLocation() - GetOwner()->GetActorLocation();
+	FVector EngineRelativeDir = GetRelativeDir();
 	float DotValue = FVector::DotProduct(WorldDir.GetSafeNormal(), EngineRelativeDir.GetSafeNormal());
 
 	if (DotValue < LateralMovementDotAcceptance)
@@ -131,6 +126,23 @@ void UEngineAudioComponent::OnLateralMovement(FVector WorldDir, float Magnitude,
 	if (!ToggleActivity(VerticalLateral.X, VerticalLateral.Y)) return;
 
 	UpdateSound(WorldDir.Length());
+}
+
+FVector UEngineAudioComponent::GetRelativeDir() const
+{
+	switch (EnginePosition)
+	{
+	case EEnginePosition::CENTER:
+		return GetOwner()->GetActorLocation();
+	case EEnginePosition::TOP:
+		return GetOwner()->GetActorUpVector();
+	case EEnginePosition::RIGHT:
+		return GetOwner()->GetActorRightVector();
+	case EEnginePosition::LEFT:
+		return -GetOwner()->GetActorRightVector();
+	default:
+		return GetOwner()->GetActorLocation();
+	}
 }
 
 void UEngineAudioComponent::OnAutomaticPilot(bool IsActive)

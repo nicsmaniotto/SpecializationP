@@ -11,7 +11,8 @@ class UBaseHUD;
 class UCanvasPanel;
 
 /**
- * 
+ * HUD base class.
+ * It presents an instance of the BaseHUD widget in it.
  */
 UCLASS()
 class SPECIALIZATION_API UBaseMenu : public UUserWidget, public ISetuppable
@@ -23,6 +24,7 @@ protected:
 	UBaseHUD* BaseHUD;
 
 public:
+	/*Links all the events needed for functionality*/
 	virtual void SetupEvents_Implementation(AActor* LinkedActor) override;
 	
 };
