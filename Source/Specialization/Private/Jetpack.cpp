@@ -73,12 +73,9 @@ void UJetpack::StartMove(const FInputActionValue& Value)
 	if (PlanetSurface && !GetOnAir())
 	{
 		FVector OwnerLoc = OwnerPhysicsComponent->GetComponentLocation();
-
-		FVector DampCompensation = OwnerPhysicsComponent->GetPhysicsLinearVelocity() / OwnerPhysicsComponent->GetLinearDamping();
-		FVector PlanetForces = PlanetSurface->GetDeltaVelocity(OwnerLoc) + PlanetSurface->GetDeltaAngForce(OwnerLoc);
-
+		
 		OwnerPhysicsComponent->AddForce(
-			(PlanetSurface->GetDeltaVelocity(OwnerLoc) + PlanetSurface->GetDeltaAngForce(OwnerLoc)) * OwnerPhysicsComponent->GetLinearDamping(),
+			PlanetSurface->GetDeltaVelocity(OwnerLoc) * OwnerPhysicsComponent->GetLinearDamping(),
 			NAME_None, true);
 	}
 }
@@ -106,7 +103,7 @@ void UJetpack::Move(const FInputActionValue& Value)
 	APlanet* PlanetSurface = GetPlanetSurface();
 	if (PlanetSurface)
 	{
-		PlanetVelocity = PlanetSurface->GetDeltaVelocity(OwnerPhysicsComponent->GetComponentLocation()) + PlanetSurface->GetDeltaAngForce(OwnerPhysicsComponent->GetComponentLocation());
+		PlanetVelocity = PlanetSurface->GetDeltaVelocity(OwnerPhysicsComponent->GetComponentLocation());
 	}
 
 	FVector ForVector = OwnerPhysicsComponent->GetForwardVector();
@@ -236,10 +233,9 @@ void UJetpack::UpdateGravityForce(FVector OldGForce, FVector NewGForce)
 void UJetpack::AskReposition_Implementation(ERepositionType RepositionType, FVector RepositionTorqueForce, bool ForceReposition)
 {
 	if (!OnAir || !OwnerPhysicsComponent->IsSimulatingPhysics()) return;
-	//if (!OwnerPhysicsComponent->IsSimulatingPhysics()) return;
+
 	IsForcedReposition = ForceReposition;
 
-	//if (IsForcedReposition) Super::AskReposition_Implementation(RepositionType, RepositionTorqueForce, ForceReposition);
 	Super::AskReposition_Implementation(RepositionType, RepositionTorqueForce, ForceReposition);
 }
 
@@ -256,6 +252,15 @@ USceneComponent* UJetpack::GetRepositionableComponent_Implementation() const
 
 void UJetpack::CustomReposition(float DeltaTime)
 {
+	// Physics reposition
+	APlanet* PlanetSurface = GetPlanetSurface();
+
+	if (PlanetSurface && !GetOnAir())
+	{
+		OwnerPhysicsComponent->AddTorqueInRadians(PlanetSurface->GetDeltaAngForce() * OwnerPhysicsComponent->GetAngularDamping(), NAME_None, true);
+	}
+
+	// Repositionable reposition
 	USceneComponent* Repositionable = IRepositionable::Execute_GetRepositionableComponent(this);
 	FRotator NextRotation;
 
@@ -283,12 +288,12 @@ void UJetpack::PositionAdjustment(float DeltaTime)
 		if (GetOnAir())
 		{
 			OwnerPhysicsComponent->AddForce(
-				(PlanetSurface->GetDeltaVelocity(OwnerLoc) + PlanetSurface->GetDeltaAngForce(OwnerLoc)) * (OwnerPhysicsComponent->GetLinearDamping()),
+				PlanetSurface->GetDeltaVelocity(OwnerLoc) * (OwnerPhysicsComponent->GetLinearDamping()),
 				NAME_None, true);
 		}
 		else if (MovType != EMovType::WALK && !bHasJumped)
 		{
-			OwnerPhysicsComponent->SetPhysicsLinearVelocity(PlanetSurface->GetDeltaVelocity(OwnerLoc) + PlanetSurface->GetDeltaAngForce(OwnerLoc), false);
+			OwnerPhysicsComponent->SetPhysicsLinearVelocity(PlanetSurface->GetDeltaVelocity(OwnerLoc), false);
 		}
 	}
 }

@@ -83,7 +83,7 @@ public:
 	/*Get Planet linear velocity*/
 	FVector GetDeltaVelocity(FVector Location) const;
 
-	/*Get Planet angular force applied to element at Location*/
-	FVector GetDeltaAngForce(FVector Location) const;
+	/*Get Planet angular force applied*/
+	FVector GetDeltaAngForce() const;
 
 };

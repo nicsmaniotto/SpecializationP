@@ -88,14 +88,9 @@ FVector APlanet::GetDeltaVelocity(FVector Location) const
 	return Mesh->GetPhysicsLinearVelocityAtPoint(Location);
 }
 
-FVector APlanet::GetDeltaAngForce(FVector Location) const
+FVector APlanet::GetDeltaAngForce() const
 {
-	FVector AngVelForce = FVector::CrossProduct(Mesh->GetPhysicsAngularVelocityInRadians(), Location - Mesh->GetComponentLocation());
-
-	DrawDebugLine(GetWorld(), GetWorld()->GetFirstPlayerController()->GetPawn()->GetActorLocation(),
-		GetWorld()->GetFirstPlayerController()->GetPawn()->GetActorLocation() - AngVelForce, FColor::Emerald, false, .1f);
-
-	return AngVelForce;
+	return Mesh->GetPhysicsAngularVelocityInRadians();
 }
 
 void APlanet::MeshRotation(float DeltaTime)
