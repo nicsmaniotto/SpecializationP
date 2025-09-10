@@ -90,7 +90,8 @@ FVector APlanet::GetDeltaVelocity(FVector Location) const
 
 FVector APlanet::GetDeltaAngForce() const
 {
-	return Mesh->GetPhysicsAngularVelocityInRadians();
+	//return Mesh->GetPhysicsAngularVelocityInRadians();
+	return Mesh->GetPhysicsAngularVelocityInDegrees();
 }
 
 void APlanet::MeshRotation(float DeltaTime)

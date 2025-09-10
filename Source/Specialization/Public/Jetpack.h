@@ -104,6 +104,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Walk", meta = (AllowPrivateAccess = "true", ClampMin = "0", ClampMax = "1"))
 	float JumpDirectionMultiplier = .4f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Walk", meta = (AllowPrivateAccess = "true"))
+	TEnumAsByte<ETraceTypeQuery> StopWalkTypesCheck = UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility);
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Walk", meta = (AllowPrivateAccess = "true"))
+	float StopWalkCheckOffset = 50;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement | Walk", meta = (AllowPrivateAccess = "true"))
+	float StopWalkCheckLength = 50;
+
 	bool bHasJumped;
 
 	bool IsForcedReposition;
@@ -117,6 +126,8 @@ public:
 	virtual void StartMove(const FInputActionValue& Value) override;
 
 	virtual void Move(const FInputActionValue& Value) override;
+
+	virtual bool WalkMoveCheck(FVector& MovementDir);
 
 	virtual void StopMove(const FInputActionValue& Value) override;
 
@@ -149,7 +160,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool StopJumping();
-	
+
 	UFUNCTION(BlueprintCallable)
 	bool ToggleJetpack();
 
@@ -158,7 +169,7 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnJetpackEquip OnJetpackEquip;
-	
+
 	UPROPERTY(BlueprintAssignable)
 	FOnMovement OnMovement;
 

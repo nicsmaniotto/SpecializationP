@@ -134,11 +134,16 @@ void UJetpack::Move(const FInputActionValue& Value)
 
 		FVector ImpressForce = LastMovDirection * MaxWalkSpeed;
 
+		DrawDebugLine(GetWorld(), OwnerPhysicsComponent->GetComponentLocation(), OwnerPhysicsComponent->GetComponentLocation() + ImpressForce, FColor::Red, false, .1f);
+
 		if (LandingPlanet)
 		{
 			ImpressForce = ImpressForce.RotateAngleAxis(LandingPlanet->GetDeltaAngForce().Length(), LandingPlanet->GetDeltaAngForce());
 		}
 
+		DrawDebugLine(GetWorld(), OwnerPhysicsComponent->GetComponentLocation(), OwnerPhysicsComponent->GetComponentLocation() + ImpressForce, FColor::Emerald, false, .1f);
+
+		//OwnerPhysicsComponent->SetPhysicsLinearVelocity(LastMovDirection * MaxWalkSpeed + PlanetVelocity, false);
 		OwnerPhysicsComponent->SetPhysicsLinearVelocity(ImpressForce + PlanetVelocity, false);
 
 		MovType = EMovType::WALK;
@@ -176,7 +181,7 @@ bool UJetpack::WalkMoveCheck(FVector& MovementDir)
 
 		FVector NormalAdjusted = FVector::VectorPlaneProject(ImpactNormal, GetGForce().GetSafeNormal()).GetSafeNormal();
 		
-		if (FVector::DotProduct(FVector::VectorPlaneProject(MovementDir, GetGForce().GetSafeNormal()).GetSafeNormal(), NormalAdjusted) < -.99f)
+		if (FVector::DotProduct(FVector::VectorPlaneProject(MovementDir, GetGForce().GetSafeNormal()).GetSafeNormal(), NormalAdjusted) < -.8f)
 		{
 			return false;
 		}

@@ -80,7 +80,7 @@ void ASpecializationCharacter::BeginPlay()
 	Jetpack->OnGravityUpdate.AddUniqueDynamic(this, &ASpecializationCharacter::OnGravityUpdate);
 	Jetpack->OnJetpackEquip.AddUniqueDynamic(this, &ASpecializationCharacter::OnJetpackEquip);
 
-	CameraSocket->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	CameraSocket->DetachFromParent(true);
 }
 
 void ASpecializationCharacter::Tick(float DeltaSeconds)
@@ -89,10 +89,8 @@ void ASpecializationCharacter::Tick(float DeltaSeconds)
 
 	if (!GetController()) return;
 
-	// Setting the camera socket location
-	CameraSocket->SetWorldLocation(GetActorLocation() + CameraSocket->GetUpVector() * (GetCapsuleComponent()->GetScaledCapsuleHalfHeight() / 2), false, nullptr, ETeleportType::TeleportPhysics);
+	CameraSocket->SetWorldLocation(GetActorLocation() + CameraSocket->GetUpVector() * 40);
 
-	// Oxygen consumption
 	EnergyComponent->StartConsumeEnergy(OxygenConsumptionMap);
 
 	// camera pitch movement
@@ -273,7 +271,7 @@ void ASpecializationCharacter::Possess_Implementation(APawn* Possesser)
 		}
 	}
 
-	CameraSocket->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	CameraSocket->DetachFromParent(true);
 
 	TogglePhysicality(true);
 
